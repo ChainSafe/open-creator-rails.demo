@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@open-creator-rails/sdk':
         specifier: file:open-creator-rails-sdk
-        version: file:open-creator-rails-sdk(typescript@5.9.3)(zod@4.3.6)
+        version: open-creator-rails-sdk@file:open-creator-rails-sdk
       '@tanstack/react-query':
         specifier: ^5.95.2
         version: 5.95.2(react@19.2.4)
@@ -508,9 +508,6 @@ packages:
   '@noble/hashes@1.8.0':
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
-
-  '@open-creator-rails/sdk@file:open-creator-rails-sdk':
-    resolution: {directory: open-creator-rails-sdk, type: directory}
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -2169,6 +2166,9 @@ packages:
     resolution: {integrity: sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==}
     engines: {node: '>=6'}
 
+  open-creator-rails-sdk@file:open-creator-rails-sdk:
+    resolution: {directory: open-creator-rails-sdk, type: directory}
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -3442,15 +3442,6 @@ snapshots:
       '@noble/hashes': 1.8.0
 
   '@noble/hashes@1.8.0': {}
-
-  '@open-creator-rails/sdk@file:open-creator-rails-sdk(typescript@5.9.3)(zod@4.3.6)':
-    dependencies:
-      viem: 2.47.6(typescript@5.9.3)(zod@4.3.6)
-    transitivePeerDependencies:
-      - bufferutil
-      - typescript
-      - utf-8-validate
-      - zod
 
   '@opentelemetry/api@1.9.0': {}
 
@@ -5294,6 +5285,8 @@ snapshots:
   onetime@5.1.2:
     dependencies:
       mimic-fn: 2.1.0
+
+  open-creator-rails-sdk@file:open-creator-rails-sdk: {}
 
   optionator@0.9.4:
     dependencies:
