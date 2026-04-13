@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { formatUnits, type Address } from 'viem'
 import { useAccount, useConnect, useDisconnect, usePublicClient } from 'wagmi'
 
@@ -166,6 +167,8 @@ export function MyAssetsPage() {
                 </div>
                 <div>
                   AssetId: <code>{a.assetId}</code>
+                  {' · '}
+                  <Link to={`/assets/${a.assetId}/history`}>History</Link>
                 </div>
                 <div>
                   Token: <code>{tokenMeta?.token ?? '—'}</code>

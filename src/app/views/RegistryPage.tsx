@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import type { Address } from 'viem'
+import { isAddress, isHex, keccak256, stringToHex, type Address } from 'viem'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { createSdkIndexer, type IndexerAssetEntity } from '@open-creator-rails/sdk'
 import { SubscribeToAssetButton } from '../components/SubscribeToAssetButton'
 import { appConfig } from '../config'
@@ -8,6 +10,15 @@ import { useOcrSdk } from '../ocrSdk'
 
 export function RegistryPage() {
   const sdk = useOcrSdk()
+  const qc = useQueryClient()
+  const { address, isConnected } = useAccount()
+  const { connect, connectors, isPending: isConnecting } = useConnect()
+  const { disconnect } = useDisconnect()
+  const [newAssetId, setNewAssetId] = useState('')
+  const [newTokenAddress, setNewTokenAddress] = useState('')
+  const [newOwnerAddress, setNewOwnerAddress] = useState('')
+  const [newSubscriptionPrice, setNewSubscriptionPrice] = useState('')
+
   const ownerQuery = useQuery({
     queryKey: ['ocr', 'registryOwner', appConfig.registryAddress],
     queryFn: async () => {
@@ -32,6 +43,78 @@ export function RegistryPage() {
     enabled: Boolean(appConfig.registryAddress),
   })
 
+  const demoTokenAddressQuery = useQuery({
+    queryKey: ['ocr', 'demoTokenAddress', assetsQuery.data?.[0]?.id],
+    queryFn: async () => {
+      if (!sdk) throw new Error('SDK not ready')
+      const firstAsset = assetsQuery.data?.[0]
+      if (!firstAsset) throw new Error('No existing assets to infer demo token from')
+      return sdk.Asset.getTokenAddress({ assetAddress: firstAsset.id })
+    },
+    enabled: Boolean(sdk && assetsQuery.data?.[0]?.id),
+  })
+
+  const createAssetMutation = useMutation({
+    mutationFn: async () => {
+      if (!sdk) throw new Error('SDK not ready')
+      if (!newAssetId || !isHex(newAssetId, { strict: true }) || newAssetId.length !== 66) {
+        throw new Error('Asset id must be a 32-byte hex value (bytes32)')
+      }
+      if (!isAddress(newTokenAddress, { strict: true })) {
+        throw new Error('Token address must be a valid address')
+      }
+      const owner = (newOwnerAddress || address || '').trim()
+      if (!isAddress(owner, { strict: true })) {
+        throw new Error('Owner must be a valid address (or connect wallet)')
+      }
+      if (!/^\d+$/.test(newSubscriptionPrice)) {
+        throw new Error('Subscription price must be an integer string')
+      }
+      const subscriptionPrice = BigInt(newSubscriptionPrice)
+      if (subscriptionPrice <= 0n) throw new Error('Subscription price must be > 0')
+
+      return sdk.AssetRegistry.createAsset({
+        assetId: newAssetId as `0x${string}`,
+        subscriptionPrice,
+        tokenAddress: newTokenAddress as Address,
+        owner: owner as Address,
+      })
+    },
+    onSuccess: async () => {
+      setNewAssetId('')
+      setNewTokenAddress('')
+      setNewSubscriptionPrice('')
+      await qc.invalidateQueries({ queryKey: ['indexer', 'listAssetsByRegistry'] })
+    },
+  })
+
+  const addDemoAssetMutation = useMutation({
+    mutationFn: async () => {
+      if (!sdk) throw new Error('SDK not ready')
+      const index = (assetsQuery.data?.length ?? 0) + 1
+      const demoHumanId = `demo_asset_${index}`
+      const demoAssetId = keccak256(stringToHex(demoHumanId))
+      const demoPricePerSecond = BigInt(index * 10)
+      const demoTokenAddress = demoTokenAddressQuery.data || newTokenAddress
+      if (!isAddress(demoTokenAddress, { strict: true })) {
+        throw new Error('Need a valid token address (either existing demo assets or form token input)')
+      }
+      const demoOwner = ownerQuery.data || address
+      if (!demoOwner || !isAddress(demoOwner, { strict: true })) {
+        throw new Error('Registry owner not available and wallet not connected')
+      }
+      return sdk.AssetRegistry.createAsset({
+        assetId: demoAssetId,
+        subscriptionPrice: demoPricePerSecond,
+        tokenAddress: demoTokenAddress as Address,
+        owner: demoOwner as Address,
+      })
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['indexer', 'listAssetsByRegistry'] })
+    },
+  })
+
   return (
     <div>
       <h1>Creator profile (AssetRegistry)</h1>
@@ -53,6 +136,98 @@ export function RegistryPage() {
                 : ownerQuery.data}
         </code>
       </p>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {!isConnected ? (
+          <button onClick={() => connect({ connector: connectors[0]! })} disabled={isConnecting}>
+            {isConnecting ? 'Connecting…' : 'Connect wallet'}
+          </button>
+        ) : (
+          <>
+            <button onClick={() => disconnect()}>Disconnect</button>
+            <code>{address}</code>
+          </>
+        )}
+      </div>
+
+      <h2 style={{ marginTop: 16 }}>Add Asset</h2>
+      <p>Create and register a new asset in this registry.</p>
+      <p>
+        Quick demo add:{' '}
+        <button type="button" onClick={() => addDemoAssetMutation.mutate()} disabled={!sdk || addDemoAssetMutation.isPending}>
+          {addDemoAssetMutation.isPending ? 'Adding demo asset…' : 'Add demo asset'}
+        </button>
+      </p>
+      <p style={{ marginTop: -4, fontSize: 13 }}>
+        Uses seed-style params: <code>assetId=keccak256("demo_asset_N")</code>,{' '}
+        <code>pricePerSecond=N*10</code>, token from first indexed asset, owner from registry owner.
+      </p>
+      <div style={{ display: 'grid', gap: 8, maxWidth: 760 }}>
+        <label>
+          Asset ID (bytes32):
+          <input
+            value={newAssetId}
+            onChange={(e) => setNewAssetId(e.target.value.trim())}
+            placeholder="0x… (64 hex chars)"
+            style={{ width: '100%' }}
+          />
+        </label>
+        <label>
+          Token address:
+          <input
+            value={newTokenAddress}
+            onChange={(e) => setNewTokenAddress(e.target.value.trim())}
+            placeholder="0x…"
+            style={{ width: '100%' }}
+          />
+        </label>
+        <label>
+          Owner address (optional, defaults to connected wallet):
+          <input
+            value={newOwnerAddress}
+            onChange={(e) => setNewOwnerAddress(e.target.value.trim())}
+            placeholder={address ?? '0x…'}
+            style={{ width: '100%' }}
+          />
+        </label>
+        <label>
+          Subscription price (raw integer, per second):
+          <input
+            value={newSubscriptionPrice}
+            onChange={(e) => setNewSubscriptionPrice(e.target.value.trim())}
+            placeholder="e.g. 34722222222222"
+            style={{ width: '100%' }}
+          />
+        </label>
+        <div>
+          <button
+            type="button"
+            onClick={() => createAssetMutation.mutate()}
+            disabled={!sdk || createAssetMutation.isPending}
+          >
+            {createAssetMutation.isPending ? 'Adding asset…' : 'Add asset'}
+          </button>
+        </div>
+      </div>
+      {createAssetMutation.data ? (
+        <p>
+          Tx: <code>{createAssetMutation.data}</code>
+        </p>
+      ) : null}
+      {createAssetMutation.error ? (
+        <p>
+          Add asset error: <code>{(createAssetMutation.error as Error).message}</code>
+        </p>
+      ) : null}
+      {addDemoAssetMutation.data ? (
+        <p>
+          Demo tx: <code>{addDemoAssetMutation.data}</code>
+        </p>
+      ) : null}
+      {addDemoAssetMutation.error ? (
+        <p>
+          Add demo asset error: <code>{(addDemoAssetMutation.error as Error).message}</code>
+        </p>
+      ) : null}
 
       <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
 
@@ -83,6 +258,8 @@ export function RegistryPage() {
             <div>
               <Link to={`/assets/${a.assetId}`}>{a.assetId}</Link> <span>→</span>{' '}
               <code>{a.id}</code>
+              {' · '}
+              <Link to={`/assets/${a.assetId}/history`}>History</Link>
             </div>
             <SubscribeToAssetButton assetId={a.assetId} compact />
           </li>

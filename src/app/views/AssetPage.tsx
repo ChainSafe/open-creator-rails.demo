@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { isHex } from 'viem'
 import { useQuery } from '@tanstack/react-query'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
@@ -52,6 +52,11 @@ export function AssetPage() {
       <p>
         Asset ID hash: <code>{params.assetId ?? '(missing)'}</code>
       </p>
+      {assetId ? (
+        <p>
+          <Link to={`/assets/${assetId}/history`}>View history</Link>
+        </p>
+      ) : null}
       <p>
         Asset address:{' '}
         <code>
