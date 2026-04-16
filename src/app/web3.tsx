@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createWeb3Modal } from '@web3modal/wagmi/react'
 import { http, type Transport } from 'viem'
-import { anvil } from 'viem/chains'
 import { WagmiProvider, createConfig } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 
@@ -10,11 +9,11 @@ import { appConfig } from './config'
 const queryClient = new QueryClient()
 
 const transports: Record<number, Transport> = {
-  [anvil.id]: http(appConfig.rpcUrl),
+  [appConfig.chain.id]: http(appConfig.rpcUrl),
 }
 
 const wagmiConfig = createConfig({
-  chains: [anvil],
+  chains: [appConfig.chain],
   transports,
   connectors: [injected()],
 })

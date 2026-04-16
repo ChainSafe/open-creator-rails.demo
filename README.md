@@ -88,8 +88,9 @@ rm -rf ./open-creator-rails-sdk/open-creator-rails/apps/indexer/.ponder
 Then re-run the `ponder dev` command from step 5.
 
 ### 6) Configure the frontend
-Create a `.env` in this repo root:
+Create a `.env.anvil` in this repo root, or update the one already checked in:
 ```bash
+VITE_CHAIN=anvil
 VITE_RPC_URL=http://127.0.0.1:8545
 VITE_INDEXER_URL=http://localhost:42069/graphql
 VITE_REGISTRY_ADDRESS=0xYourRegistryAddress
@@ -101,8 +102,18 @@ To get the registry address, use the output from `./scripts/local-demo-seed.sh` 
 
 ### 7) Run the app
 ```bash
-pnpm dev
+pnpm dev:anvil
 ```
+
+## Sepolia development
+
+The repo also includes `.env.sepolia` for the hosted Sepolia demo configuration. Run:
+
+```bash
+pnpm dev:sepolia
+```
+
+If you need different Sepolia RPC/indexer/registry settings, edit `.env.sepolia` instead of changing the local Anvil file.
 
 ## Scripts
 - `./scripts/local-demo-seed.sh`: deploys and seeds local Anvil with a registry + assets.
@@ -110,6 +121,8 @@ pnpm dev
 ## Useful commands
 ```bash
 pnpm build
+pnpm build:anvil
+pnpm build:sepolia
 pnpm lint
 pnpm preview
 ```

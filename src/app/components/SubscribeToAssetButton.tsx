@@ -5,6 +5,7 @@ import type { Hex } from 'viem'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 
+import { appConfig } from '../config'
 import { useOcrSdk } from '../ocrSdk'
 import { erc20PermitAbi } from '../erc20Permit'
 import styles from './SubscribeToAssetButton.module.scss'
@@ -19,8 +20,8 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
   const sdk = useOcrSdk()
   const qc = useQueryClient()
   const { address, isConnected } = useAccount()
-  const { data: walletClient } = useWalletClient()
-  const publicClient = usePublicClient()
+  const { data: walletClient } = useWalletClient({ chainId: appConfig.chain.id })
+  const publicClient = usePublicClient({ chainId: appConfig.chain.id })
   const [days, setDays] = useState(30)
 
   const durationSeconds = useMemo(() => BigInt(Math.max(1, days)) * 24n * 60n * 60n, [days])
@@ -119,7 +120,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
         domain: {
           name: tokenName as string,
           version: '1',
-          chainId: walletClient.chain?.id ?? publicClient.chain?.id ?? 31337,
+          chainId: appConfig.chain.id,
           verifyingContract: token,
         },
         types: {
@@ -211,6 +212,10 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
 
       {!isConnected ? (
         <span className={compact ? styles.connectHintCompact : styles.connectHint}>Connect a wallet to subscribe.</span>
+      ) : !walletClient ? (
+        <span className={compact ? styles.connectHintCompact : styles.connectHint}>
+          Switch your wallet to <strong>{appConfig.chain.name}</strong> to subscribe.
+        </span>
       ) : statusQuery.data?.isActive ? (
         <span className={compact ? styles.subscribedCompact : undefined}>
           <strong>Subscribed</strong>

@@ -7,7 +7,11 @@
   "scripts": {
     "postinstall": "pnpm -C open-creator-rails-sdk install && pnpm -C open-creator-rails-sdk build",
     "dev": "vite",
+    "dev:anvil": "vite --mode anvil",
+    "dev:sepolia": "vite --mode sepolia",
     "build": "tsc -b && vite build",
+    "build:anvil": "tsc -b && vite build --mode anvil",
+    "build:sepolia": "tsc -b && vite build --mode sepolia",
     "lint": "eslint .",
     "preview": "vite preview"
   },
