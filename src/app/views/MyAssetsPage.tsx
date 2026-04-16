@@ -8,6 +8,7 @@ import { createSdkIndexer, type IndexerAssetEntity } from '@open-creator-rails/s
 import { appConfig } from '../config'
 import { useOcrSdk } from '../ocrSdk'
 import { erc20MetadataAbi } from '../erc20Permit'
+import styles from './MyAssetsPage.module.scss'
 
 function toLower(a: string | undefined) {
   return (a ?? '').toLowerCase()
@@ -107,7 +108,7 @@ export function MyAssetsPage() {
   return (
     <div>
       <h1>Your Assets</h1>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className={styles.walletRow}>
         {!isConnected ? (
           <button onClick={() => connect({ connector: connectors[0]! })} disabled={isConnecting}>
             {isConnecting ? 'Connecting…' : 'Connect wallet'}
@@ -120,7 +121,7 @@ export function MyAssetsPage() {
         )}
       </div>
 
-      <p style={{ marginTop: 12 }}>
+      <p className={styles.indexerInfo}>
         Indexer: <code>{appConfig.indexerUrl}</code>
       </p>
 
@@ -130,7 +131,7 @@ export function MyAssetsPage() {
         </p>
       ) : null}
 
-      <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+      <hr className={styles.sectionDivider} />
 
       <p>
         Price view/edit helper duration:{' '}
@@ -139,7 +140,7 @@ export function MyAssetsPage() {
           min={1}
           value={priceDays}
           onChange={(e) => setPriceDays(Number(e.target.value))}
-          style={{ width: 80 }}
+          className={styles.daysInput}
         />{' '}
         days
       </p>
@@ -160,7 +161,7 @@ export function MyAssetsPage() {
           const price = pricesQuery.data?.get(a.id.toLowerCase())
 
           return (
-            <li key={a.id} style={{ marginBottom: 12 }}>
+            <li key={a.id} className={styles.assetItem}>
               <div>
                 <div>
                   Asset: <code>{a.id}</code>
@@ -206,7 +207,7 @@ export function MyAssetsPage() {
 function SetPriceRow(props: { disabled: boolean; onSet: (value: string) => void }) {
   const [value, setValue] = useState('3')
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+    <div className={styles.setPriceRow}>
       <label>
         New price (for chosen duration):{' '}
         <input value={value} onChange={(e) => setValue(e.target.value)} disabled={props.disabled} />

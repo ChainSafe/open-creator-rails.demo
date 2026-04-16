@@ -7,6 +7,7 @@ import { createSdkIndexer, type IndexerAssetEntity } from '@open-creator-rails/s
 import { SubscribeToAssetButton } from '../components/SubscribeToAssetButton'
 import { appConfig } from '../config'
 import { useOcrSdk } from '../ocrSdk'
+import styles from './RegistryPage.module.scss'
 
 export function RegistryPage() {
   const sdk = useOcrSdk()
@@ -116,7 +117,7 @@ export function RegistryPage() {
   })
 
   return (
-    <div>
+    <div className={styles.page}>
       <h1>Creator profile (AssetRegistry)</h1>
       <p>
         This page will list assets under the configured registry and link to their details.
@@ -136,7 +137,7 @@ export function RegistryPage() {
                 : ownerQuery.data}
         </code>
       </p>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className={styles.walletRow}>
         {!isConnected ? (
           <button onClick={() => connect({ connector: connectors[0]! })} disabled={isConnecting}>
             {isConnecting ? 'Connecting…' : 'Connect wallet'}
@@ -149,7 +150,7 @@ export function RegistryPage() {
         )}
       </div>
 
-      <h2 style={{ marginTop: 16 }}>Add Asset</h2>
+      <h2 className={styles.addAssetTitle}>Add Asset</h2>
       <p>Create and register a new asset in this registry.</p>
       <p>
         Quick demo add:{' '}
@@ -157,45 +158,45 @@ export function RegistryPage() {
           {addDemoAssetMutation.isPending ? 'Adding demo asset…' : 'Add demo asset'}
         </button>
       </p>
-      <p style={{ marginTop: -4, fontSize: 13 }}>
+      <p className={styles.seedHint}>
         Uses seed-style params: <code>assetId=keccak256("demo_asset_N")</code>,{' '}
         <code>pricePerSecond=N*10</code>, token from first indexed asset, owner from registry owner.
       </p>
-      <div style={{ display: 'grid', gap: 8, maxWidth: 760 }}>
-        <label>
+      <div className={styles.formGrid}>
+        <label className={styles.formLabel}>
           Asset ID (bytes32):
           <input
             value={newAssetId}
             onChange={(e) => setNewAssetId(e.target.value.trim())}
             placeholder="0x… (64 hex chars)"
-            style={{ width: '100%' }}
+            className={styles.fullWidthInput}
           />
         </label>
-        <label>
+        <label className={styles.formLabel}>
           Token address:
           <input
             value={newTokenAddress}
             onChange={(e) => setNewTokenAddress(e.target.value.trim())}
             placeholder="0x…"
-            style={{ width: '100%' }}
+            className={styles.fullWidthInput}
           />
         </label>
-        <label>
+        <label className={styles.formLabel}>
           Owner address (optional, defaults to connected wallet):
           <input
             value={newOwnerAddress}
             onChange={(e) => setNewOwnerAddress(e.target.value.trim())}
             placeholder={address ?? '0x…'}
-            style={{ width: '100%' }}
+            className={styles.fullWidthInput}
           />
         </label>
-        <label>
+        <label className={styles.formLabel}>
           Subscription price (raw integer, per second):
           <input
             value={newSubscriptionPrice}
             onChange={(e) => setNewSubscriptionPrice(e.target.value.trim())}
             placeholder="e.g. 34722222222222"
-            style={{ width: '100%' }}
+            className={styles.fullWidthInput}
           />
         </label>
         <div>
@@ -229,7 +230,7 @@ export function RegistryPage() {
         </p>
       ) : null}
 
-      <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+      <hr className={styles.sectionDivider} />
 
       <h2>Assets</h2>
       <p>
@@ -245,16 +246,9 @@ export function RegistryPage() {
         <p>No assets found (run the local seed script + indexer; registry address must match the seeded registry).</p>
       ) : null}
 
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <ul className={styles.assetList}>
         {(assetsQuery.data ?? []).map((a: IndexerAssetEntity) => (
-          <li
-            key={a.id}
-            style={{
-              marginBottom: 16,
-              paddingBottom: 16,
-              borderBottom: '1px solid var(--border)',
-            }}
-          >
+          <li key={a.id} className={styles.assetListItem}>
             <div>
               <Link to={`/assets/${a.assetId}`}>{a.assetId}</Link> <span>→</span>{' '}
               <code>{a.id}</code>

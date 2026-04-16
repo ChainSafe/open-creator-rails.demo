@@ -6,6 +6,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 
 import { SubscribeToAssetButton } from '../components/SubscribeToAssetButton'
 import { useOcrSdk } from '../ocrSdk'
+import styles from './AssetPage.module.scss'
 
 export function AssetPage() {
   const params = useParams<{ assetId: string }>()
@@ -87,29 +88,17 @@ export function AssetPage() {
       </p>
 
       {statusQuery.data?.isActive ? (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 12,
-            border: '1px solid var(--accent-border)',
-            background: 'var(--accent-bg)',
-            borderRadius: 8,
-          }}
-        >
+        <div className={styles.unlocked}>
           <strong>Unlocked</strong>
-          <div style={{ marginTop: 8 }}>
+          <div className={styles.unlockedText}>
             Demo gated content: you’re subscribed, so you can “access” this asset.
           </div>
         </div>
       ) : null}
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div className={styles.walletRow}>
         {!isConnected ? (
-          <button
-            className={undefined}
-            onClick={() => connect({ connector: connectors[0]! })}
-            disabled={isConnecting}
-          >
+          <button onClick={() => connect({ connector: connectors[0]! })} disabled={isConnecting}>
             {isConnecting ? 'Connecting…' : 'Connect wallet'}
           </button>
         ) : (
@@ -120,7 +109,7 @@ export function AssetPage() {
         )}
       </div>
 
-      <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+      <hr className={styles.sectionDivider} />
 
       <h2>Subscribe</h2>
       {assetId ? <SubscribeToAssetButton assetId={assetId} /> : null}

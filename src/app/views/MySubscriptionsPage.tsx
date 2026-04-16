@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi'
 
 import { appConfig } from '../config'
 import { useOcrSdk } from '../ocrSdk'
+import styles from './MySubscriptionsPage.module.scss'
 
 type SubscriptionWithRegistryId = IndexerSubscription & { registryAssetId: Hex }
 
@@ -58,14 +59,14 @@ export function MySubscriptionsPage() {
         </p>
       ) : null}
 
-      <ul style={{ listStyle: 'none', padding: 0 }}>
+      <ul className={styles.subscriptionList}>
         {(subsQuery.data ?? []).map((s: SubscriptionWithRegistryId) => {
           const cancellingThis =
             cancelMutation.isPending &&
             cancelMutation.variables != null &&
             cancelMutation.variables.toLowerCase() === s.assetAddress.toLowerCase()
           return (
-            <li key={s.id} style={{ marginBottom: 12, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+            <li key={s.id} className={styles.subscriptionListItem}>
               <span>
                 <Link to={`/assets/${s.registryAssetId}`}>{s.registryAssetId}</Link> — active until{' '}
                 <code>{s.endTime != null ? s.endTime.toString() : '—'}</code>
@@ -83,7 +84,7 @@ export function MySubscriptionsPage() {
       </ul>
 
       {cancelMutation.error ? (
-        <p style={{ marginTop: 12 }}>
+        <p className={styles.cancelError}>
           Cancel error: <code>{(cancelMutation.error as Error).message}</code>
         </p>
       ) : null}

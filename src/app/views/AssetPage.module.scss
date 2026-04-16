@@ -1,0 +1,24 @@
+.unlocked {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-bg);
+  border-radius: 8px;
+}
+
+.unlockedText {
+  margin-top: 8px;
+}
+
+.walletRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sectionDivider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}

@@ -3,11 +3,7 @@ import styles from './AppLayout.module.scss'
 
 function TopLink(props: { to: string; label: string }) {
   return (
-    <NavLink
-      to={props.to}
-      className={styles.link}
-      style={({ isActive }) => (isActive ? { outline: '2px solid var(--accent)' } : undefined)}
-    >
+    <NavLink to={props.to} className={({ isActive }) => (isActive ? `${styles.link} ${styles.activeLink}` : styles.link)}>
       {props.label}
     </NavLink>
   )
@@ -23,7 +19,6 @@ export function AppLayout() {
           <TopLink to="/me/assets" label="Your Assets" />
           <TopLink to="/me/subscriptions" label="Your Subscriptions" />
         </nav>
-        <div className={styles.note}>Anvil demo</div>
       </header>
       <main className={styles.main}>
         <Outlet />

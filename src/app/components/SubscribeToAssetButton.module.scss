@@ -1,0 +1,49 @@
+.container {
+  margin-top: 12px;
+}
+
+.compactContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.daysInput {
+  width: 80px;
+}
+
+.compactDaysLabel {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.compactDaysInput {
+  width: 56px;
+}
+
+.compactPrice {
+  font-size: 13px;
+}
+
+.connectHint {
+  font-size: 14px;
+}
+
+.connectHintCompact {
+  font-size: 12px;
+}
+
+.subscribedCompact {
+  font-size: 13px;
+}
+
+.error {
+  color: var(--error, #c00);
+}
+
+.errorCompact {
+  font-size: 12px;
+}

@@ -5,6 +5,7 @@ import { isHex, type Address } from 'viem'
 
 import { createSdkIndexer } from '@open-creator-rails/sdk'
 import { appConfig } from '../config'
+import styles from './AssetHistoryPage.module.scss'
 
 function fmtTs(ts: bigint | undefined) {
   if (!ts) return '—'
@@ -109,7 +110,7 @@ export function AssetHistoryPage() {
         </code>
       </p>
 
-      <hr style={{ margin: '16px 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+      <hr className={styles.sectionDivider} />
 
       <h2>Creation / provenance</h2>
       {createdQuery.isLoading ? <p>Loading…</p> : null}

@@ -1,0 +1,32 @@
+.walletRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.indexerInfo {
+  margin-top: 12px;
+}
+
+.sectionDivider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.daysInput {
+  width: 80px;
+}
+
+.assetItem {
+  margin-bottom: 12px;
+}
+
+.setPriceRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}

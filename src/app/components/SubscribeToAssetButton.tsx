@@ -7,6 +7,7 @@ import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 
 import { useOcrSdk } from '../ocrSdk'
 import { erc20PermitAbi } from '../erc20Permit'
+import styles from './SubscribeToAssetButton.module.scss'
 
 type Props = {
   assetId: Hex
@@ -158,13 +159,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
   })
 
   return (
-    <div
-      style={
-        compact
-          ? { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 8 }
-          : { marginTop: 12 }
-      }
-    >
+    <div className={compact ? `${styles.container} ${styles.compactContainer}` : styles.container}>
       {!compact ? (
         <>
           <p>
@@ -177,7 +172,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
               min={1}
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
-              style={{ width: 80 }}
+              className={styles.daysInput}
             />{' '}
             days
           </p>
@@ -194,17 +189,17 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
         </>
       ) : (
         <>
-          <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <label className={styles.compactDaysLabel}>
             <span>Days</span>
             <input
               type="number"
               min={1}
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
-              style={{ width: 56 }}
+              className={styles.compactDaysInput}
             />
           </label>
-          <span style={{ fontSize: 13 }}>
+          <span className={styles.compactPrice}>
             {priceQuery.data && tokenMetaQuery.data
               ? `${formatUnits(priceQuery.data, tokenMetaQuery.data.decimals)} ${tokenMetaQuery.data.name}`
               : priceQuery.isLoading
@@ -215,9 +210,9 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       )}
 
       {!isConnected ? (
-        <span style={{ fontSize: compact ? 12 : 14 }}>Connect a wallet to subscribe.</span>
+        <span className={compact ? styles.connectHintCompact : styles.connectHint}>Connect a wallet to subscribe.</span>
       ) : statusQuery.data?.isActive ? (
-        <span style={{ fontSize: compact ? 13 : undefined }}>
+        <span className={compact ? styles.subscribedCompact : undefined}>
           <strong>Subscribed</strong>
           {compact ? (
             <>
@@ -248,7 +243,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
         </p>
       ) : null}
       {subscribeMutation.error ? (
-        <p style={{ color: 'var(--error, #c00)', fontSize: compact ? 12 : undefined }}>
+        <p className={compact ? `${styles.error} ${styles.errorCompact}` : styles.error}>
           {(subscribeMutation.error as Error).message}
         </p>
       ) : null}

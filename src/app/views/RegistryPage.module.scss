@@ -1,0 +1,55 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.walletRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.addAssetTitle {
+  margin-top: 16px;
+}
+
+.seedHint {
+  margin-top: -4px;
+  font-size: 13px;
+}
+
+.formGrid {
+  display: grid;
+  gap: 8px;
+  max-width: 760px;
+}
+
+.formLabel {
+  display: block;
+}
+
+.fullWidthInput {
+  width: 100%;
+}
+
+.sectionDivider {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.assetList {
+  list-style: none;
+  padding: 0;
+}
+
+.assetListItem {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
