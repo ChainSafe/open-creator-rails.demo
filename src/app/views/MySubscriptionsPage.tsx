@@ -10,6 +10,11 @@ import styles from './MySubscriptionsPage.module.scss'
 
 type SubscriptionWithRegistryId = IndexerSubscription & { registryAssetId: Hex }
 
+function normalizeAssetAddress(value: string): Address {
+  const normalized = value.includes('_') ? value.split('_').at(-1) ?? value : value
+  return normalized as Address
+}
+
 export function MySubscriptionsPage() {
   const { address } = useAccount()
   const sdk = useOcrSdk()
@@ -35,10 +40,14 @@ export function MySubscriptionsPage() {
       const ix = createSdkIndexer(appConfig.indexerUrl)
       const subs = await ix.listSubscriptionsByUser({ user: address, activeOnly: true })
       return Promise.all(
-        subs.map(async (s: IndexerSubscription): Promise<SubscriptionWithRegistryId> => ({
-          ...s,
-          registryAssetId: await sdk.Asset.getAssetId({ assetAddress: s.assetAddress }),
-        })),
+        subs.map(async (s: IndexerSubscription): Promise<SubscriptionWithRegistryId> => {
+          const assetAddress = normalizeAssetAddress(s.assetAddress)
+          return {
+            ...s,
+            assetAddress,
+            registryAssetId: await sdk.Asset.getAssetId({ assetAddress }),
+          }
+        }),
       )
     },
     enabled: Boolean(address && sdk),
