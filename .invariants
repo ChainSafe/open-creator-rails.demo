@@ -1,0 +1,17 @@
+version: "1.0"
+scope: "open-creator-rails.demo"
+inherits: "../.invariants"
+
+# Demo app assertions. Minimal — the demo is not a protocol implementation,
+# but it must model correct SDK usage patterns for developers copying it.
+# Maintainer: demo team — not agent-writable.
+
+asserts:
+
+  - id: sdk_consumption_not_direct_rpc
+    claim: "Demo accesses subscription state via the SDK — not via direct on-chain RPC calls"
+    source: codebase
+    severity: ADDITIVE
+    verify:
+      search: "subscription active isActive SDK import demo component"
+    why: "The demo is the reference pattern for developers. Direct RPC access in the demo teaches the wrong abstraction and bypasses SDK-level fallback logic."
