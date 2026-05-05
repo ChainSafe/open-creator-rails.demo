@@ -22,22 +22,26 @@ type Meta {
 }
 
 type Query {
+  registryEntity(id: String!): RegistryEntity
+  registryEntitys(where: RegistryEntityFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): RegistryEntityPage!
   assetEntity(id: String!): AssetEntity
   assetEntitys(where: AssetEntityFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetEntityPage!
-  assetIdToAddress(id: String!): AssetIdToAddress
-  assetIdToAddresss(where: AssetIdToAddressFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetIdToAddressPage!
   subscription(id: String!): Subscription
   subscriptions(where: SubscriptionFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): SubscriptionPage!
   assetRegistry_AssetCreated(id: String!): AssetRegistry_AssetCreated
   assetRegistry_AssetCreateds(where: AssetRegistry_AssetCreatedFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetRegistry_AssetCreatedPage!
   assetRegistry_OwnershipTransferred(id: String!): AssetRegistry_OwnershipTransferred
   assetRegistry_OwnershipTransferreds(where: AssetRegistry_OwnershipTransferredFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetRegistry_OwnershipTransferredPage!
-  assetRegistry_CreatorFeeShareUpdated(id: String!): AssetRegistry_CreatorFeeShareUpdated
-  assetRegistry_CreatorFeeShareUpdateds(where: AssetRegistry_CreatorFeeShareUpdatedFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetRegistry_CreatorFeeShareUpdatedPage!
   assetRegistry_RegistryFeeShareUpdated(id: String!): AssetRegistry_RegistryFeeShareUpdated
   assetRegistry_RegistryFeeShareUpdateds(where: AssetRegistry_RegistryFeeShareUpdatedFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetRegistry_RegistryFeeShareUpdatedPage!
+  assetRegistry_RegistryFeeClaimedBatch(id: String!): AssetRegistry_RegistryFeeClaimedBatch
+  assetRegistry_RegistryFeeClaimedBatchs(where: AssetRegistry_RegistryFeeClaimedBatchFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetRegistry_RegistryFeeClaimedBatchPage!
   asset_SubscriptionAdded(id: String!): Asset_SubscriptionAdded
   asset_SubscriptionAddeds(where: Asset_SubscriptionAddedFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): Asset_SubscriptionAddedPage!
+  asset_SubscriptionExtended(id: String!): Asset_SubscriptionExtended
+  asset_SubscriptionExtendeds(where: Asset_SubscriptionExtendedFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): Asset_SubscriptionExtendedPage!
+  asset_CreatorFeeClaimed(id: String!): Asset_CreatorFeeClaimed
+  asset_CreatorFeeClaimeds(where: Asset_CreatorFeeClaimedFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): Asset_CreatorFeeClaimedPage!
   asset_SubscriptionPriceUpdated(id: String!): Asset_SubscriptionPriceUpdated
   asset_SubscriptionPriceUpdateds(where: Asset_SubscriptionPriceUpdatedFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): Asset_SubscriptionPriceUpdatedPage!
   asset_SubscriptionRevoked(id: String!): Asset_SubscriptionRevoked
@@ -49,11 +53,13 @@ type Query {
   _meta: Meta
 }
 
-type AssetEntity {
+type RegistryEntity {
   id: String!
-  assetId: String!
-  registryAddress: String!
-  owner: String!
+  chainId: Int!
+  address: String!
+  owner: String
+  registryFeeShare: BigInt
+  assets(where: AssetEntityFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): AssetEntityPage
 }
 
 type AssetEntityPage {
@@ -62,89 +68,29 @@ type AssetEntityPage {
   totalCount: Int!
 }
 
-input AssetEntityFilter {
-  AND: [AssetEntityFilter]
-  OR: [AssetEntityFilter]
-  id: String
-  id_not: String
-  id_in: [String]
-  id_not_in: [String]
-  id_contains: String
-  id_not_contains: String
-  id_starts_with: String
-  id_ends_with: String
-  id_not_starts_with: String
-  id_not_ends_with: String
-  assetId: String
-  assetId_not: String
-  assetId_in: [String]
-  assetId_not_in: [String]
-  assetId_contains: String
-  assetId_not_contains: String
-  assetId_starts_with: String
-  assetId_ends_with: String
-  assetId_not_starts_with: String
-  assetId_not_ends_with: String
-  registryAddress: String
-  registryAddress_not: String
-  registryAddress_in: [String]
-  registryAddress_not_in: [String]
-  registryAddress_contains: String
-  registryAddress_not_contains: String
-  registryAddress_starts_with: String
-  registryAddress_ends_with: String
-  registryAddress_not_starts_with: String
-  registryAddress_not_ends_with: String
-  owner: String
-  owner_not: String
-  owner_in: [String]
-  owner_not_in: [String]
-  owner_contains: String
-  owner_not_contains: String
-  owner_starts_with: String
-  owner_ends_with: String
-  owner_not_starts_with: String
-  owner_not_ends_with: String
-}
-
-type AssetIdToAddress {
+type AssetEntity {
   id: String!
-  assetAddress: String!
+  chainId: Int!
+  assetId: String!
+  address: String!
+  registryId: String!
+  registryAddress: String!
+  owner: String!
+  subscriptionPrice: BigInt!
+  tokenAddress: String!
+  registry: RegistryEntity
+  subscriptions(where: SubscriptionFilter, orderBy: String, orderDirection: String, before: String, after: String, limit: Int, offset: Int): SubscriptionPage
 }
 
-type AssetIdToAddressPage {
-  items: [AssetIdToAddress!]!
+type SubscriptionPage {
+  items: [Subscription!]!
   pageInfo: PageInfo!
   totalCount: Int!
 }
 
-input AssetIdToAddressFilter {
-  AND: [AssetIdToAddressFilter]
-  OR: [AssetIdToAddressFilter]
-  id: String
-  id_not: String
-  id_in: [String]
-  id_not_in: [String]
-  id_contains: String
-  id_not_contains: String
-  id_starts_with: String
-  id_ends_with: String
-  id_not_starts_with: String
-  id_not_ends_with: String
-  assetAddress: String
-  assetAddress_not: String
-  assetAddress_in: [String]
-  assetAddress_not_in: [String]
-  assetAddress_contains: String
-  assetAddress_not_contains: String
-  assetAddress_starts_with: String
-  assetAddress_ends_with: String
-  assetAddress_not_starts_with: String
-  assetAddress_not_ends_with: String
-}
-
 type Subscription {
   id: String!
+  chainId: Int!
   assetId: String!
   subscriber: String!
   payer: String!
@@ -152,12 +98,7 @@ type Subscription {
   endTime: BigInt!
   nonce: BigInt!
   isActive: Boolean!
-}
-
-type SubscriptionPage {
-  items: [Subscription!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
+  asset: AssetEntity
 }
 
 input SubscriptionFilter {
@@ -173,6 +114,20 @@ input SubscriptionFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   assetId: String
   assetId_not: String
   assetId_in: [String]
@@ -183,6 +138,12 @@ input SubscriptionFilter {
   assetId_ends_with: String
   assetId_not_starts_with: String
   assetId_not_ends_with: String
+  assetId_contains_nocase: String
+  assetId_not_contains_nocase: String
+  assetId_starts_with_nocase: String
+  assetId_ends_with_nocase: String
+  assetId_not_starts_with_nocase: String
+  assetId_not_ends_with_nocase: String
   subscriber: String
   subscriber_not: String
   subscriber_in: [String]
@@ -193,6 +154,12 @@ input SubscriptionFilter {
   subscriber_ends_with: String
   subscriber_not_starts_with: String
   subscriber_not_ends_with: String
+  subscriber_contains_nocase: String
+  subscriber_not_contains_nocase: String
+  subscriber_starts_with_nocase: String
+  subscriber_ends_with_nocase: String
+  subscriber_not_starts_with_nocase: String
+  subscriber_not_ends_with_nocase: String
   payer: String
   payer_not: String
   payer_in: [String]
@@ -203,6 +170,12 @@ input SubscriptionFilter {
   payer_ends_with: String
   payer_not_starts_with: String
   payer_not_ends_with: String
+  payer_contains_nocase: String
+  payer_not_contains_nocase: String
+  payer_starts_with_nocase: String
+  payer_ends_with_nocase: String
+  payer_not_starts_with_nocase: String
+  payer_not_ends_with_nocase: String
   startTime: BigInt
   startTime_not: BigInt
   startTime_in: [BigInt]
@@ -233,8 +206,217 @@ input SubscriptionFilter {
   isActive_not_in: [Boolean]
 }
 
+input AssetEntityFilter {
+  AND: [AssetEntityFilter]
+  OR: [AssetEntityFilter]
+  id: String
+  id_not: String
+  id_in: [String]
+  id_not_in: [String]
+  id_contains: String
+  id_not_contains: String
+  id_starts_with: String
+  id_ends_with: String
+  id_not_starts_with: String
+  id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
+  assetId: String
+  assetId_not: String
+  assetId_in: [String]
+  assetId_not_in: [String]
+  assetId_contains: String
+  assetId_not_contains: String
+  assetId_starts_with: String
+  assetId_ends_with: String
+  assetId_not_starts_with: String
+  assetId_not_ends_with: String
+  assetId_contains_nocase: String
+  assetId_not_contains_nocase: String
+  assetId_starts_with_nocase: String
+  assetId_ends_with_nocase: String
+  assetId_not_starts_with_nocase: String
+  assetId_not_ends_with_nocase: String
+  address: String
+  address_not: String
+  address_in: [String]
+  address_not_in: [String]
+  address_contains: String
+  address_not_contains: String
+  address_starts_with: String
+  address_ends_with: String
+  address_not_starts_with: String
+  address_not_ends_with: String
+  address_contains_nocase: String
+  address_not_contains_nocase: String
+  address_starts_with_nocase: String
+  address_ends_with_nocase: String
+  address_not_starts_with_nocase: String
+  address_not_ends_with_nocase: String
+  registryId: String
+  registryId_not: String
+  registryId_in: [String]
+  registryId_not_in: [String]
+  registryId_contains: String
+  registryId_not_contains: String
+  registryId_starts_with: String
+  registryId_ends_with: String
+  registryId_not_starts_with: String
+  registryId_not_ends_with: String
+  registryId_contains_nocase: String
+  registryId_not_contains_nocase: String
+  registryId_starts_with_nocase: String
+  registryId_ends_with_nocase: String
+  registryId_not_starts_with_nocase: String
+  registryId_not_ends_with_nocase: String
+  registryAddress: String
+  registryAddress_not: String
+  registryAddress_in: [String]
+  registryAddress_not_in: [String]
+  registryAddress_contains: String
+  registryAddress_not_contains: String
+  registryAddress_starts_with: String
+  registryAddress_ends_with: String
+  registryAddress_not_starts_with: String
+  registryAddress_not_ends_with: String
+  registryAddress_contains_nocase: String
+  registryAddress_not_contains_nocase: String
+  registryAddress_starts_with_nocase: String
+  registryAddress_ends_with_nocase: String
+  registryAddress_not_starts_with_nocase: String
+  registryAddress_not_ends_with_nocase: String
+  owner: String
+  owner_not: String
+  owner_in: [String]
+  owner_not_in: [String]
+  owner_contains: String
+  owner_not_contains: String
+  owner_starts_with: String
+  owner_ends_with: String
+  owner_not_starts_with: String
+  owner_not_ends_with: String
+  owner_contains_nocase: String
+  owner_not_contains_nocase: String
+  owner_starts_with_nocase: String
+  owner_ends_with_nocase: String
+  owner_not_starts_with_nocase: String
+  owner_not_ends_with_nocase: String
+  subscriptionPrice: BigInt
+  subscriptionPrice_not: BigInt
+  subscriptionPrice_in: [BigInt]
+  subscriptionPrice_not_in: [BigInt]
+  subscriptionPrice_gt: BigInt
+  subscriptionPrice_lt: BigInt
+  subscriptionPrice_gte: BigInt
+  subscriptionPrice_lte: BigInt
+  tokenAddress: String
+  tokenAddress_not: String
+  tokenAddress_in: [String]
+  tokenAddress_not_in: [String]
+  tokenAddress_contains: String
+  tokenAddress_not_contains: String
+  tokenAddress_starts_with: String
+  tokenAddress_ends_with: String
+  tokenAddress_not_starts_with: String
+  tokenAddress_not_ends_with: String
+  tokenAddress_contains_nocase: String
+  tokenAddress_not_contains_nocase: String
+  tokenAddress_starts_with_nocase: String
+  tokenAddress_ends_with_nocase: String
+  tokenAddress_not_starts_with_nocase: String
+  tokenAddress_not_ends_with_nocase: String
+}
+
+type RegistryEntityPage {
+  items: [RegistryEntity!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input RegistryEntityFilter {
+  AND: [RegistryEntityFilter]
+  OR: [RegistryEntityFilter]
+  id: String
+  id_not: String
+  id_in: [String]
+  id_not_in: [String]
+  id_contains: String
+  id_not_contains: String
+  id_starts_with: String
+  id_ends_with: String
+  id_not_starts_with: String
+  id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
+  address: String
+  address_not: String
+  address_in: [String]
+  address_not_in: [String]
+  address_contains: String
+  address_not_contains: String
+  address_starts_with: String
+  address_ends_with: String
+  address_not_starts_with: String
+  address_not_ends_with: String
+  address_contains_nocase: String
+  address_not_contains_nocase: String
+  address_starts_with_nocase: String
+  address_ends_with_nocase: String
+  address_not_starts_with_nocase: String
+  address_not_ends_with_nocase: String
+  owner: String
+  owner_not: String
+  owner_in: [String]
+  owner_not_in: [String]
+  owner_contains: String
+  owner_not_contains: String
+  owner_starts_with: String
+  owner_ends_with: String
+  owner_not_starts_with: String
+  owner_not_ends_with: String
+  owner_contains_nocase: String
+  owner_not_contains_nocase: String
+  owner_starts_with_nocase: String
+  owner_ends_with_nocase: String
+  owner_not_starts_with_nocase: String
+  owner_not_ends_with_nocase: String
+  registryFeeShare: BigInt
+  registryFeeShare_not: BigInt
+  registryFeeShare_in: [BigInt]
+  registryFeeShare_not_in: [BigInt]
+  registryFeeShare_gt: BigInt
+  registryFeeShare_lt: BigInt
+  registryFeeShare_gte: BigInt
+  registryFeeShare_lte: BigInt
+}
+
 type AssetRegistry_AssetCreated {
   id: String!
+  chainId: Int!
   assetId: String!
   asset: String!
   subscriptionPrice: BigInt!
@@ -264,6 +446,20 @@ input AssetRegistry_AssetCreatedFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   assetId: String
   assetId_not: String
   assetId_in: [String]
@@ -274,6 +470,12 @@ input AssetRegistry_AssetCreatedFilter {
   assetId_ends_with: String
   assetId_not_starts_with: String
   assetId_not_ends_with: String
+  assetId_contains_nocase: String
+  assetId_not_contains_nocase: String
+  assetId_starts_with_nocase: String
+  assetId_ends_with_nocase: String
+  assetId_not_starts_with_nocase: String
+  assetId_not_ends_with_nocase: String
   asset: String
   asset_not: String
   asset_in: [String]
@@ -284,6 +486,12 @@ input AssetRegistry_AssetCreatedFilter {
   asset_ends_with: String
   asset_not_starts_with: String
   asset_not_ends_with: String
+  asset_contains_nocase: String
+  asset_not_contains_nocase: String
+  asset_starts_with_nocase: String
+  asset_ends_with_nocase: String
+  asset_not_starts_with_nocase: String
+  asset_not_ends_with_nocase: String
   subscriptionPrice: BigInt
   subscriptionPrice_not: BigInt
   subscriptionPrice_in: [BigInt]
@@ -302,6 +510,12 @@ input AssetRegistry_AssetCreatedFilter {
   tokenAddress_ends_with: String
   tokenAddress_not_starts_with: String
   tokenAddress_not_ends_with: String
+  tokenAddress_contains_nocase: String
+  tokenAddress_not_contains_nocase: String
+  tokenAddress_starts_with_nocase: String
+  tokenAddress_ends_with_nocase: String
+  tokenAddress_not_starts_with_nocase: String
+  tokenAddress_not_ends_with_nocase: String
   owner: String
   owner_not: String
   owner_in: [String]
@@ -312,6 +526,12 @@ input AssetRegistry_AssetCreatedFilter {
   owner_ends_with: String
   owner_not_starts_with: String
   owner_not_ends_with: String
+  owner_contains_nocase: String
+  owner_not_contains_nocase: String
+  owner_starts_with_nocase: String
+  owner_ends_with_nocase: String
+  owner_not_starts_with_nocase: String
+  owner_not_ends_with_nocase: String
   registryAddress: String
   registryAddress_not: String
   registryAddress_in: [String]
@@ -322,6 +542,12 @@ input AssetRegistry_AssetCreatedFilter {
   registryAddress_ends_with: String
   registryAddress_not_starts_with: String
   registryAddress_not_ends_with: String
+  registryAddress_contains_nocase: String
+  registryAddress_not_contains_nocase: String
+  registryAddress_starts_with_nocase: String
+  registryAddress_ends_with_nocase: String
+  registryAddress_not_starts_with_nocase: String
+  registryAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]
@@ -342,6 +568,7 @@ input AssetRegistry_AssetCreatedFilter {
 
 type AssetRegistry_OwnershipTransferred {
   id: String!
+  chainId: Int!
   previousOwner: String!
   newOwner: String!
   registryAddress: String!
@@ -368,6 +595,20 @@ input AssetRegistry_OwnershipTransferredFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   previousOwner: String
   previousOwner_not: String
   previousOwner_in: [String]
@@ -378,6 +619,12 @@ input AssetRegistry_OwnershipTransferredFilter {
   previousOwner_ends_with: String
   previousOwner_not_starts_with: String
   previousOwner_not_ends_with: String
+  previousOwner_contains_nocase: String
+  previousOwner_not_contains_nocase: String
+  previousOwner_starts_with_nocase: String
+  previousOwner_ends_with_nocase: String
+  previousOwner_not_starts_with_nocase: String
+  previousOwner_not_ends_with_nocase: String
   newOwner: String
   newOwner_not: String
   newOwner_in: [String]
@@ -388,6 +635,12 @@ input AssetRegistry_OwnershipTransferredFilter {
   newOwner_ends_with: String
   newOwner_not_starts_with: String
   newOwner_not_ends_with: String
+  newOwner_contains_nocase: String
+  newOwner_not_contains_nocase: String
+  newOwner_starts_with_nocase: String
+  newOwner_ends_with_nocase: String
+  newOwner_not_starts_with_nocase: String
+  newOwner_not_ends_with_nocase: String
   registryAddress: String
   registryAddress_not: String
   registryAddress_in: [String]
@@ -398,69 +651,12 @@ input AssetRegistry_OwnershipTransferredFilter {
   registryAddress_ends_with: String
   registryAddress_not_starts_with: String
   registryAddress_not_ends_with: String
-  blockNumber: BigInt
-  blockNumber_not: BigInt
-  blockNumber_in: [BigInt]
-  blockNumber_not_in: [BigInt]
-  blockNumber_gt: BigInt
-  blockNumber_lt: BigInt
-  blockNumber_gte: BigInt
-  blockNumber_lte: BigInt
-  blockTimestamp: BigInt
-  blockTimestamp_not: BigInt
-  blockTimestamp_in: [BigInt]
-  blockTimestamp_not_in: [BigInt]
-  blockTimestamp_gt: BigInt
-  blockTimestamp_lt: BigInt
-  blockTimestamp_gte: BigInt
-  blockTimestamp_lte: BigInt
-}
-
-type AssetRegistry_CreatorFeeShareUpdated {
-  id: String!
-  newCreatorFeeShare: BigInt!
-  registryAddress: String!
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-}
-
-type AssetRegistry_CreatorFeeShareUpdatedPage {
-  items: [AssetRegistry_CreatorFeeShareUpdated!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-input AssetRegistry_CreatorFeeShareUpdatedFilter {
-  AND: [AssetRegistry_CreatorFeeShareUpdatedFilter]
-  OR: [AssetRegistry_CreatorFeeShareUpdatedFilter]
-  id: String
-  id_not: String
-  id_in: [String]
-  id_not_in: [String]
-  id_contains: String
-  id_not_contains: String
-  id_starts_with: String
-  id_ends_with: String
-  id_not_starts_with: String
-  id_not_ends_with: String
-  newCreatorFeeShare: BigInt
-  newCreatorFeeShare_not: BigInt
-  newCreatorFeeShare_in: [BigInt]
-  newCreatorFeeShare_not_in: [BigInt]
-  newCreatorFeeShare_gt: BigInt
-  newCreatorFeeShare_lt: BigInt
-  newCreatorFeeShare_gte: BigInt
-  newCreatorFeeShare_lte: BigInt
-  registryAddress: String
-  registryAddress_not: String
-  registryAddress_in: [String]
-  registryAddress_not_in: [String]
-  registryAddress_contains: String
-  registryAddress_not_contains: String
-  registryAddress_starts_with: String
-  registryAddress_ends_with: String
-  registryAddress_not_starts_with: String
-  registryAddress_not_ends_with: String
+  registryAddress_contains_nocase: String
+  registryAddress_not_contains_nocase: String
+  registryAddress_starts_with_nocase: String
+  registryAddress_ends_with_nocase: String
+  registryAddress_not_starts_with_nocase: String
+  registryAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]
@@ -481,6 +677,7 @@ input AssetRegistry_CreatorFeeShareUpdatedFilter {
 
 type AssetRegistry_RegistryFeeShareUpdated {
   id: String!
+  chainId: Int!
   newRegistryFeeShare: BigInt!
   registryAddress: String!
   blockNumber: BigInt!
@@ -506,6 +703,20 @@ input AssetRegistry_RegistryFeeShareUpdatedFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   newRegistryFeeShare: BigInt
   newRegistryFeeShare_not: BigInt
   newRegistryFeeShare_in: [BigInt]
@@ -524,6 +735,113 @@ input AssetRegistry_RegistryFeeShareUpdatedFilter {
   registryAddress_ends_with: String
   registryAddress_not_starts_with: String
   registryAddress_not_ends_with: String
+  registryAddress_contains_nocase: String
+  registryAddress_not_contains_nocase: String
+  registryAddress_starts_with_nocase: String
+  registryAddress_ends_with_nocase: String
+  registryAddress_not_starts_with_nocase: String
+  registryAddress_not_ends_with_nocase: String
+  blockNumber: BigInt
+  blockNumber_not: BigInt
+  blockNumber_in: [BigInt]
+  blockNumber_not_in: [BigInt]
+  blockNumber_gt: BigInt
+  blockNumber_lt: BigInt
+  blockNumber_gte: BigInt
+  blockNumber_lte: BigInt
+  blockTimestamp: BigInt
+  blockTimestamp_not: BigInt
+  blockTimestamp_in: [BigInt]
+  blockTimestamp_not_in: [BigInt]
+  blockTimestamp_gt: BigInt
+  blockTimestamp_lt: BigInt
+  blockTimestamp_gte: BigInt
+  blockTimestamp_lte: BigInt
+}
+
+type AssetRegistry_RegistryFeeClaimedBatch {
+  id: String!
+  chainId: Int!
+  assetId: String!
+  totalAmount: BigInt!
+  registryAddress: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type AssetRegistry_RegistryFeeClaimedBatchPage {
+  items: [AssetRegistry_RegistryFeeClaimedBatch!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input AssetRegistry_RegistryFeeClaimedBatchFilter {
+  AND: [AssetRegistry_RegistryFeeClaimedBatchFilter]
+  OR: [AssetRegistry_RegistryFeeClaimedBatchFilter]
+  id: String
+  id_not: String
+  id_in: [String]
+  id_not_in: [String]
+  id_contains: String
+  id_not_contains: String
+  id_starts_with: String
+  id_ends_with: String
+  id_not_starts_with: String
+  id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
+  assetId: String
+  assetId_not: String
+  assetId_in: [String]
+  assetId_not_in: [String]
+  assetId_contains: String
+  assetId_not_contains: String
+  assetId_starts_with: String
+  assetId_ends_with: String
+  assetId_not_starts_with: String
+  assetId_not_ends_with: String
+  assetId_contains_nocase: String
+  assetId_not_contains_nocase: String
+  assetId_starts_with_nocase: String
+  assetId_ends_with_nocase: String
+  assetId_not_starts_with_nocase: String
+  assetId_not_ends_with_nocase: String
+  totalAmount: BigInt
+  totalAmount_not: BigInt
+  totalAmount_in: [BigInt]
+  totalAmount_not_in: [BigInt]
+  totalAmount_gt: BigInt
+  totalAmount_lt: BigInt
+  totalAmount_gte: BigInt
+  totalAmount_lte: BigInt
+  registryAddress: String
+  registryAddress_not: String
+  registryAddress_in: [String]
+  registryAddress_not_in: [String]
+  registryAddress_contains: String
+  registryAddress_not_contains: String
+  registryAddress_starts_with: String
+  registryAddress_ends_with: String
+  registryAddress_not_starts_with: String
+  registryAddress_not_ends_with: String
+  registryAddress_contains_nocase: String
+  registryAddress_not_contains_nocase: String
+  registryAddress_starts_with_nocase: String
+  registryAddress_ends_with_nocase: String
+  registryAddress_not_starts_with_nocase: String
+  registryAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]
@@ -544,6 +862,7 @@ input AssetRegistry_RegistryFeeShareUpdatedFilter {
 
 type Asset_SubscriptionAdded {
   id: String!
+  chainId: Int!
   subscriber: String!
   payer: String!
   startTime: BigInt!
@@ -573,6 +892,20 @@ input Asset_SubscriptionAddedFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   subscriber: String
   subscriber_not: String
   subscriber_in: [String]
@@ -583,6 +916,12 @@ input Asset_SubscriptionAddedFilter {
   subscriber_ends_with: String
   subscriber_not_starts_with: String
   subscriber_not_ends_with: String
+  subscriber_contains_nocase: String
+  subscriber_not_contains_nocase: String
+  subscriber_starts_with_nocase: String
+  subscriber_ends_with_nocase: String
+  subscriber_not_starts_with_nocase: String
+  subscriber_not_ends_with_nocase: String
   payer: String
   payer_not: String
   payer_in: [String]
@@ -593,6 +932,12 @@ input Asset_SubscriptionAddedFilter {
   payer_ends_with: String
   payer_not_starts_with: String
   payer_not_ends_with: String
+  payer_contains_nocase: String
+  payer_not_contains_nocase: String
+  payer_starts_with_nocase: String
+  payer_ends_with_nocase: String
+  payer_not_starts_with_nocase: String
+  payer_not_ends_with_nocase: String
   startTime: BigInt
   startTime_not: BigInt
   startTime_in: [BigInt]
@@ -627,6 +972,214 @@ input Asset_SubscriptionAddedFilter {
   assetAddress_ends_with: String
   assetAddress_not_starts_with: String
   assetAddress_not_ends_with: String
+  assetAddress_contains_nocase: String
+  assetAddress_not_contains_nocase: String
+  assetAddress_starts_with_nocase: String
+  assetAddress_ends_with_nocase: String
+  assetAddress_not_starts_with_nocase: String
+  assetAddress_not_ends_with_nocase: String
+  blockNumber: BigInt
+  blockNumber_not: BigInt
+  blockNumber_in: [BigInt]
+  blockNumber_not_in: [BigInt]
+  blockNumber_gt: BigInt
+  blockNumber_lt: BigInt
+  blockNumber_gte: BigInt
+  blockNumber_lte: BigInt
+  blockTimestamp: BigInt
+  blockTimestamp_not: BigInt
+  blockTimestamp_in: [BigInt]
+  blockTimestamp_not_in: [BigInt]
+  blockTimestamp_gt: BigInt
+  blockTimestamp_lt: BigInt
+  blockTimestamp_gte: BigInt
+  blockTimestamp_lte: BigInt
+}
+
+type Asset_SubscriptionExtended {
+  id: String!
+  chainId: Int!
+  subscriber: String!
+  endTime: BigInt!
+  assetAddress: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type Asset_SubscriptionExtendedPage {
+  items: [Asset_SubscriptionExtended!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input Asset_SubscriptionExtendedFilter {
+  AND: [Asset_SubscriptionExtendedFilter]
+  OR: [Asset_SubscriptionExtendedFilter]
+  id: String
+  id_not: String
+  id_in: [String]
+  id_not_in: [String]
+  id_contains: String
+  id_not_contains: String
+  id_starts_with: String
+  id_ends_with: String
+  id_not_starts_with: String
+  id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
+  subscriber: String
+  subscriber_not: String
+  subscriber_in: [String]
+  subscriber_not_in: [String]
+  subscriber_contains: String
+  subscriber_not_contains: String
+  subscriber_starts_with: String
+  subscriber_ends_with: String
+  subscriber_not_starts_with: String
+  subscriber_not_ends_with: String
+  subscriber_contains_nocase: String
+  subscriber_not_contains_nocase: String
+  subscriber_starts_with_nocase: String
+  subscriber_ends_with_nocase: String
+  subscriber_not_starts_with_nocase: String
+  subscriber_not_ends_with_nocase: String
+  endTime: BigInt
+  endTime_not: BigInt
+  endTime_in: [BigInt]
+  endTime_not_in: [BigInt]
+  endTime_gt: BigInt
+  endTime_lt: BigInt
+  endTime_gte: BigInt
+  endTime_lte: BigInt
+  assetAddress: String
+  assetAddress_not: String
+  assetAddress_in: [String]
+  assetAddress_not_in: [String]
+  assetAddress_contains: String
+  assetAddress_not_contains: String
+  assetAddress_starts_with: String
+  assetAddress_ends_with: String
+  assetAddress_not_starts_with: String
+  assetAddress_not_ends_with: String
+  assetAddress_contains_nocase: String
+  assetAddress_not_contains_nocase: String
+  assetAddress_starts_with_nocase: String
+  assetAddress_ends_with_nocase: String
+  assetAddress_not_starts_with_nocase: String
+  assetAddress_not_ends_with_nocase: String
+  blockNumber: BigInt
+  blockNumber_not: BigInt
+  blockNumber_in: [BigInt]
+  blockNumber_not_in: [BigInt]
+  blockNumber_gt: BigInt
+  blockNumber_lt: BigInt
+  blockNumber_gte: BigInt
+  blockNumber_lte: BigInt
+  blockTimestamp: BigInt
+  blockTimestamp_not: BigInt
+  blockTimestamp_in: [BigInt]
+  blockTimestamp_not_in: [BigInt]
+  blockTimestamp_gt: BigInt
+  blockTimestamp_lt: BigInt
+  blockTimestamp_gte: BigInt
+  blockTimestamp_lte: BigInt
+}
+
+type Asset_CreatorFeeClaimed {
+  id: String!
+  chainId: Int!
+  subscriber: String!
+  amount: BigInt!
+  assetAddress: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type Asset_CreatorFeeClaimedPage {
+  items: [Asset_CreatorFeeClaimed!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input Asset_CreatorFeeClaimedFilter {
+  AND: [Asset_CreatorFeeClaimedFilter]
+  OR: [Asset_CreatorFeeClaimedFilter]
+  id: String
+  id_not: String
+  id_in: [String]
+  id_not_in: [String]
+  id_contains: String
+  id_not_contains: String
+  id_starts_with: String
+  id_ends_with: String
+  id_not_starts_with: String
+  id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
+  subscriber: String
+  subscriber_not: String
+  subscriber_in: [String]
+  subscriber_not_in: [String]
+  subscriber_contains: String
+  subscriber_not_contains: String
+  subscriber_starts_with: String
+  subscriber_ends_with: String
+  subscriber_not_starts_with: String
+  subscriber_not_ends_with: String
+  subscriber_contains_nocase: String
+  subscriber_not_contains_nocase: String
+  subscriber_starts_with_nocase: String
+  subscriber_ends_with_nocase: String
+  subscriber_not_starts_with_nocase: String
+  subscriber_not_ends_with_nocase: String
+  amount: BigInt
+  amount_not: BigInt
+  amount_in: [BigInt]
+  amount_not_in: [BigInt]
+  amount_gt: BigInt
+  amount_lt: BigInt
+  amount_gte: BigInt
+  amount_lte: BigInt
+  assetAddress: String
+  assetAddress_not: String
+  assetAddress_in: [String]
+  assetAddress_not_in: [String]
+  assetAddress_contains: String
+  assetAddress_not_contains: String
+  assetAddress_starts_with: String
+  assetAddress_ends_with: String
+  assetAddress_not_starts_with: String
+  assetAddress_not_ends_with: String
+  assetAddress_contains_nocase: String
+  assetAddress_not_contains_nocase: String
+  assetAddress_starts_with_nocase: String
+  assetAddress_ends_with_nocase: String
+  assetAddress_not_starts_with_nocase: String
+  assetAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]
@@ -647,6 +1200,7 @@ input Asset_SubscriptionAddedFilter {
 
 type Asset_SubscriptionPriceUpdated {
   id: String!
+  chainId: Int!
   newSubscriptionPrice: BigInt!
   assetAddress: String!
   blockNumber: BigInt!
@@ -672,6 +1226,20 @@ input Asset_SubscriptionPriceUpdatedFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   newSubscriptionPrice: BigInt
   newSubscriptionPrice_not: BigInt
   newSubscriptionPrice_in: [BigInt]
@@ -690,6 +1258,12 @@ input Asset_SubscriptionPriceUpdatedFilter {
   assetAddress_ends_with: String
   assetAddress_not_starts_with: String
   assetAddress_not_ends_with: String
+  assetAddress_contains_nocase: String
+  assetAddress_not_contains_nocase: String
+  assetAddress_starts_with_nocase: String
+  assetAddress_ends_with_nocase: String
+  assetAddress_not_starts_with_nocase: String
+  assetAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]
@@ -710,6 +1284,7 @@ input Asset_SubscriptionPriceUpdatedFilter {
 
 type Asset_SubscriptionRevoked {
   id: String!
+  chainId: Int!
   subscriber: String!
   assetAddress: String!
   blockNumber: BigInt!
@@ -735,6 +1310,20 @@ input Asset_SubscriptionRevokedFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   subscriber: String
   subscriber_not: String
   subscriber_in: [String]
@@ -745,6 +1334,12 @@ input Asset_SubscriptionRevokedFilter {
   subscriber_ends_with: String
   subscriber_not_starts_with: String
   subscriber_not_ends_with: String
+  subscriber_contains_nocase: String
+  subscriber_not_contains_nocase: String
+  subscriber_starts_with_nocase: String
+  subscriber_ends_with_nocase: String
+  subscriber_not_starts_with_nocase: String
+  subscriber_not_ends_with_nocase: String
   assetAddress: String
   assetAddress_not: String
   assetAddress_in: [String]
@@ -755,6 +1350,12 @@ input Asset_SubscriptionRevokedFilter {
   assetAddress_ends_with: String
   assetAddress_not_starts_with: String
   assetAddress_not_ends_with: String
+  assetAddress_contains_nocase: String
+  assetAddress_not_contains_nocase: String
+  assetAddress_starts_with_nocase: String
+  assetAddress_ends_with_nocase: String
+  assetAddress_not_starts_with_nocase: String
+  assetAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]
@@ -775,6 +1376,7 @@ input Asset_SubscriptionRevokedFilter {
 
 type Asset_SubscriptionCancelled {
   id: String!
+  chainId: Int!
   subscriber: String!
   assetAddress: String!
   blockNumber: BigInt!
@@ -800,6 +1402,20 @@ input Asset_SubscriptionCancelledFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   subscriber: String
   subscriber_not: String
   subscriber_in: [String]
@@ -810,6 +1426,12 @@ input Asset_SubscriptionCancelledFilter {
   subscriber_ends_with: String
   subscriber_not_starts_with: String
   subscriber_not_ends_with: String
+  subscriber_contains_nocase: String
+  subscriber_not_contains_nocase: String
+  subscriber_starts_with_nocase: String
+  subscriber_ends_with_nocase: String
+  subscriber_not_starts_with_nocase: String
+  subscriber_not_ends_with_nocase: String
   assetAddress: String
   assetAddress_not: String
   assetAddress_in: [String]
@@ -820,6 +1442,12 @@ input Asset_SubscriptionCancelledFilter {
   assetAddress_ends_with: String
   assetAddress_not_starts_with: String
   assetAddress_not_ends_with: String
+  assetAddress_contains_nocase: String
+  assetAddress_not_contains_nocase: String
+  assetAddress_starts_with_nocase: String
+  assetAddress_ends_with_nocase: String
+  assetAddress_not_starts_with_nocase: String
+  assetAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]
@@ -840,6 +1468,7 @@ input Asset_SubscriptionCancelledFilter {
 
 type Asset_OwnershipTransferred {
   id: String!
+  chainId: Int!
   previousOwner: String!
   newOwner: String!
   assetAddress: String!
@@ -866,6 +1495,20 @@ input Asset_OwnershipTransferredFilter {
   id_ends_with: String
   id_not_starts_with: String
   id_not_ends_with: String
+  id_contains_nocase: String
+  id_not_contains_nocase: String
+  id_starts_with_nocase: String
+  id_ends_with_nocase: String
+  id_not_starts_with_nocase: String
+  id_not_ends_with_nocase: String
+  chainId: Int
+  chainId_not: Int
+  chainId_in: [Int]
+  chainId_not_in: [Int]
+  chainId_gt: Int
+  chainId_lt: Int
+  chainId_gte: Int
+  chainId_lte: Int
   previousOwner: String
   previousOwner_not: String
   previousOwner_in: [String]
@@ -876,6 +1519,12 @@ input Asset_OwnershipTransferredFilter {
   previousOwner_ends_with: String
   previousOwner_not_starts_with: String
   previousOwner_not_ends_with: String
+  previousOwner_contains_nocase: String
+  previousOwner_not_contains_nocase: String
+  previousOwner_starts_with_nocase: String
+  previousOwner_ends_with_nocase: String
+  previousOwner_not_starts_with_nocase: String
+  previousOwner_not_ends_with_nocase: String
   newOwner: String
   newOwner_not: String
   newOwner_in: [String]
@@ -886,6 +1535,12 @@ input Asset_OwnershipTransferredFilter {
   newOwner_ends_with: String
   newOwner_not_starts_with: String
   newOwner_not_ends_with: String
+  newOwner_contains_nocase: String
+  newOwner_not_contains_nocase: String
+  newOwner_starts_with_nocase: String
+  newOwner_ends_with_nocase: String
+  newOwner_not_starts_with_nocase: String
+  newOwner_not_ends_with_nocase: String
   assetAddress: String
   assetAddress_not: String
   assetAddress_in: [String]
@@ -896,6 +1551,12 @@ input Asset_OwnershipTransferredFilter {
   assetAddress_ends_with: String
   assetAddress_not_starts_with: String
   assetAddress_not_ends_with: String
+  assetAddress_contains_nocase: String
+  assetAddress_not_contains_nocase: String
+  assetAddress_starts_with_nocase: String
+  assetAddress_ends_with_nocase: String
+  assetAddress_not_starts_with_nocase: String
+  assetAddress_not_ends_with_nocase: String
   blockNumber: BigInt
   blockNumber_not: BigInt
   blockNumber_in: [BigInt]

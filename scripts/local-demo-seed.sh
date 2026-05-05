@@ -14,7 +14,9 @@ set -euo pipefail
 #   ./scripts/local-demo-seed.sh
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OCR_DIR="$ROOT_DIR/open-creator-rails-sdk/open-creator-rails"
+SDK_DIR="$ROOT_DIR/open-creator-rails.sdk"
+OCR_DIR="$SDK_DIR/open-creator-rails"
+INDEXER_DIR="$SDK_DIR/open-creator-rails.indexer"
 
 RPC_URL="${RPC_URL:-http://127.0.0.1:8545}"
 
@@ -81,7 +83,7 @@ echo "AssetRegistry: $registry_address"
 echo ""
 echo "To index these locally from this repo (without changing submodules):"
 echo "  VITE_REGISTRY_ADDRESS=$registry_address PONDER_RPC_URL_31337=$RPC_URL \\"
-echo "    pnpm -s exec ponder dev --root \"$OCR_DIR/apps/indexer\" --config ../../../../ponder.anvil.config.ts"
+echo "    pnpm -s exec ponder dev --root \"$INDEXER_DIR\" --config ../../ponder.anvil.config.ts"
 
 echo "Minting test tokens to registry owner: $registry_owner"
 # mint 1,000,000 TEST with 6 decimals
@@ -115,7 +117,7 @@ create_asset "demo_asset_2" 20
 create_asset "demo_asset_3" 30
 
 echo "Done. Start indexer in another terminal with:"
-echo "  (cd \"$OCR_DIR\" && pnpm indexer:dev)"
+echo "  (cd \"$INDEXER_DIR\" && pnpm dev)"
 
 popd >/dev/null
 

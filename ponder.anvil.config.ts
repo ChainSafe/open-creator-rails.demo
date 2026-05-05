@@ -1,8 +1,8 @@
 import { getAbiItem } from 'viem'
 import { createConfig, factory } from 'ponder'
 
-import { AssetABI } from './open-creator-rails-sdk/dist/config/AssetABI.js'
-import { AssetRegistryABI } from './open-creator-rails-sdk/dist/config/AssetRegistryABI.js'
+import { AssetABI } from './open-creator-rails.sdk/dist/config/AssetABI.js'
+import { AssetRegistryABI } from './open-creator-rails.sdk/dist/config/AssetRegistryABI.js'
 
 const AssetCreatedEvent = getAbiItem({
   abi: AssetRegistryABI,

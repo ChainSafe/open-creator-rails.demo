@@ -43,7 +43,7 @@ This deploys:
 - mints test tokens to the default Anvil account
 
 Note: the seed script deploys/contracts directly with Foundry and writes the resulting addresses into
-`open-creator-rails-sdk/open-creator-rails/packages/config/src/deployments/` so the indexer and SDK ABIs stay in sync.
+`open-creator-rails.sdk/open-creator-rails/packages/config/src/deployments/` so the indexer and SDK ABIs stay in sync.
 
 ### 5) Start the indexer (Anvil local indexing)
 After the chain is seeded, start the indexer so it can ingest the deployments/events and power the UI lists:
@@ -57,9 +57,10 @@ In a new terminal, run this exactly (replace the registry address with the one p
 ```bash
 export VITE_REGISTRY_ADDRESS=0x71C95911E9a5D330f4D621842EC243EE1343292e
 export PONDER_RPC_URL_31337=http://127.0.0.1:8545
+INDEXER_ROOT="./open-creator-rails.sdk/open-creator-rails.indexer"
 pnpm -s exec ponder dev \
-  --root ./open-creator-rails-sdk/open-creator-rails/apps/indexer \
-  --config ../../../../ponder.anvil.config.ts
+  --root "$INDEXER_ROOT" \
+  --config ../../ponder.anvil.config.ts
 ```
 
 That command is the **Anvil indexer**. It will print logs for chain `31337` and start GraphQL on `http://localhost:42069/graphql`.
@@ -82,7 +83,7 @@ Troubleshooting:
 - **`RuntimeError: Aborted()` from `@electric-sql/pglite` / `InitWalRecovery` / `pg_initdb`:** Ponder’s embedded DB (PGLite) did not finish starting—often **corrupted or stale files** under `.ponder` after a crash, killed process, or upgrade. The UI can sit at **“Indexing … 0%”** forever because **backfill never begins** until the DB opens. **Stop Ponder**, delete the dev DB, then start again:
 
 ```bash
-rm -rf ./open-creator-rails-sdk/open-creator-rails/apps/indexer/.ponder
+rm -rf ./open-creator-rails.sdk/open-creator-rails.indexer/.ponder
 ```
 
 Then re-run the `ponder dev` command from step 5.

@@ -9,7 +9,7 @@ export default defineConfig([
   globalIgnores([
     'dist',
     // Keep linting focused on this app (not vendored/submodules)
-    'open-creator-rails-sdk',
+    'open-creator-rails.sdk',
   ]),
   {
     files: ['**/*.{ts,tsx}'],
