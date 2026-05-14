@@ -10,11 +10,16 @@
   margin-top: 8px;
 }
 
-.walletRow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
+.cancelRow {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--accent-border);
+}
+
+.cancelError {
+  margin: 10px 0 0;
+  color: var(--error, #c00);
+  font-size: 0.95rem;
 }
 
 .sectionDivider {

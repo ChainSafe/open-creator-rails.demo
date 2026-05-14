@@ -5,8 +5,12 @@ import type { Hex } from 'viem'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 
+import { Button } from './Button'
+import { Input } from './Input'
 import { appConfig } from '../config'
+import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { useOcrSdk } from '../ocrSdk'
+import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
 import { erc20PermitAbi } from '../erc20Permit'
 import styles from './SubscribeToAssetButton.module.scss'
 
@@ -43,6 +47,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       if (!address) throw new Error('Missing address')
       return await sdk.Asset.getSubscriptionStatus({
         assetAddress: assetAddressQuery.data,
+        subscriberId: DEMO_SUBSCRIBER_ID,
         user: address,
         source: 'auto',
       })
@@ -65,7 +70,8 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
     queryFn: async () => {
       if (!sdk) throw new Error('SDK not ready')
       if (!assetAddressQuery.data) throw new Error('Missing asset address')
-      return await sdk.Asset.getSubscriptionPrice({ assetAddress: assetAddressQuery.data, duration: durationSeconds })
+      const count = await countPeriodsCoveringSeconds(sdk, assetAddressQuery.data, durationSeconds)
+      return await sdk.Asset.getSubscriptionPrice({ assetAddress: assetAddressQuery.data, count })
     },
     enabled: Boolean(sdk && assetAddressQuery.data),
   })
@@ -114,6 +120,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       const value = priceQuery.data
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 60)
       const assetAddress = assetAddressQuery.data
+      const count = await countPeriodsCoveringSeconds(sdk, assetAddress, durationSeconds)
 
       const signatureHex = await walletClient.signTypedData({
         account: address,
@@ -145,8 +152,10 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       const sig = hexToSignature(signatureHex)
       return sdk.AssetRegistry.subscribe({
         assetId,
-        owner: address,
-        value,
+        subscriberId: DEMO_SUBSCRIBER_ID,
+        subscriberAddress: address,
+        payer: address,
+        count,
         deadline,
         v: Number(sig.v),
         r: sig.r,
@@ -168,7 +177,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
           </p>
           <p>
             Duration:{' '}
-            <input
+            <Input
               type="number"
               min={1}
               value={days}
@@ -192,11 +201,12 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
         <>
           <label className={styles.compactDaysLabel}>
             <span>Days</span>
-            <input
+            <Input
               type="number"
               min={1}
               value={days}
               onChange={(e) => setDays(Number(e.target.value))}
+              size="sm"
               className={styles.compactDaysInput}
             />
           </label>
@@ -227,8 +237,10 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
           ) : null}
         </span>
       ) : (
-        <button
+        <Button
           type="button"
+          variant="primary"
+          size={compact ? 'sm' : 'md'}
           onClick={() => subscribeMutation.mutate()}
           disabled={
             !sdk ||
@@ -239,7 +251,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
           }
         >
           {subscribeMutation.isPending ? 'Subscribing…' : 'Subscribe'}
-        </button>
+        </Button>
       )}
 
       {!compact && subscribeMutation.data ? (

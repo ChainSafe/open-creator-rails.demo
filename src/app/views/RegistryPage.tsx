@@ -1,20 +1,23 @@
+import { type IndexerAssetEntity } from '@open-creator-rails/sdk'
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { isAddress, isHex, keccak256, stringToHex, type Address } from 'viem'
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
-import { createSdkIndexer, type IndexerAssetEntity } from '@open-creator-rails/sdk'
+import { useAccount } from 'wagmi'
+import { Button } from '../components/Button'
+import { Input } from '../components/Input'
+import { Modal } from '../components/Modal'
 import { SubscribeToAssetButton } from '../components/SubscribeToAssetButton'
 import { appConfig } from '../config'
+import { createDemoIndexer } from '../indexerClient'
 import { useOcrSdk } from '../ocrSdk'
 import styles from './RegistryPage.module.scss'
 
 export function RegistryPage() {
   const sdk = useOcrSdk()
   const qc = useQueryClient()
-  const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending: isConnecting } = useConnect()
-  const { disconnect } = useDisconnect()
+  const { address } = useAccount()
+  const [addAssetModalOpen, setAddAssetModalOpen] = useState(false)
   const [newAssetId, setNewAssetId] = useState('')
   const [newTokenAddress, setNewTokenAddress] = useState('')
   const [newOwnerAddress, setNewOwnerAddress] = useState('')
@@ -36,7 +39,7 @@ export function RegistryPage() {
       // Use createSdkIndexer here instead of sdk.indexer: the list query must not depend on
       // OcrSdk’s memoized instance (stale bundle / missing this.indexer makes sdk.indexer undefined
       // even when VITE_INDEXER_URL is set — same GraphQL as sdk.indexer).
-      const ix = createSdkIndexer(appConfig.indexerUrl)
+      const ix = createDemoIndexer()
       return ix.listAssetsByRegistry({
         registryAddress: appConfig.registryAddress as Address,
       })
@@ -77,6 +80,7 @@ export function RegistryPage() {
       return sdk.AssetRegistry.createAsset({
         assetId: newAssetId as `0x${string}`,
         subscriptionPrice,
+        subscriptionDuration: 1n,
         tokenAddress: newTokenAddress as Address,
         owner: owner as Address,
       })
@@ -107,6 +111,7 @@ export function RegistryPage() {
       return sdk.AssetRegistry.createAsset({
         assetId: demoAssetId,
         subscriptionPrice: demoPricePerSecond,
+        subscriptionDuration: 1n,
         tokenAddress: demoTokenAddress as Address,
         owner: demoOwner as Address,
       })
@@ -119,9 +124,6 @@ export function RegistryPage() {
   return (
     <div className={styles.page}>
       <h1>Creator profile (AssetRegistry)</h1>
-      <p>
-        This page will list assets under the configured registry and link to their details.
-      </p>
       <p>
         Registry: <code>{appConfig.registryAddress ?? 'Missing VITE_REGISTRY_ADDRESS'}</code>
       </p>
@@ -137,105 +139,102 @@ export function RegistryPage() {
                 : ownerQuery.data}
         </code>
       </p>
-      <div className={styles.walletRow}>
-        {!isConnected ? (
-          <button onClick={() => connect({ connector: connectors[0]! })} disabled={isConnecting}>
-            {isConnecting ? 'Connecting…' : 'Connect wallet'}
-          </button>
-        ) : (
-          <>
-            <button onClick={() => disconnect()}>Disconnect</button>
-            <code>{address}</code>
-          </>
-        )}
+      <div className={styles.addAssetTriggerRow}>
+        <Button type="button" variant="primary" onClick={() => setAddAssetModalOpen(true)} disabled={!sdk}>
+          Add asset
+        </Button>
       </div>
 
-      <h2 className={styles.addAssetTitle}>Add Asset</h2>
-      <p>Create and register a new asset in this registry.</p>
-      <p>
-        Quick demo add:{' '}
-        <button type="button" onClick={() => addDemoAssetMutation.mutate()} disabled={!sdk || addDemoAssetMutation.isPending}>
-          {addDemoAssetMutation.isPending ? 'Adding demo asset…' : 'Add demo asset'}
-        </button>
-      </p>
-      <p className={styles.seedHint}>
-        Uses seed-style params: <code>assetId=keccak256("demo_asset_N")</code>,{' '}
-        <code>pricePerSecond=N*10</code>, token from first indexed asset, owner from registry owner.
-      </p>
-      <div className={styles.formGrid}>
-        <label className={styles.formLabel}>
-          Asset ID (bytes32):
-          <input
-            value={newAssetId}
-            onChange={(e) => setNewAssetId(e.target.value.trim())}
-            placeholder="0x… (64 hex chars)"
-            className={styles.fullWidthInput}
-          />
-        </label>
-        <label className={styles.formLabel}>
-          Token address:
-          <input
-            value={newTokenAddress}
-            onChange={(e) => setNewTokenAddress(e.target.value.trim())}
-            placeholder="0x…"
-            className={styles.fullWidthInput}
-          />
-        </label>
-        <label className={styles.formLabel}>
-          Owner address (optional, defaults to connected wallet):
-          <input
-            value={newOwnerAddress}
-            onChange={(e) => setNewOwnerAddress(e.target.value.trim())}
-            placeholder={address ?? '0x…'}
-            className={styles.fullWidthInput}
-          />
-        </label>
-        <label className={styles.formLabel}>
-          Subscription price (raw integer, per second):
-          <input
-            value={newSubscriptionPrice}
-            onChange={(e) => setNewSubscriptionPrice(e.target.value.trim())}
-            placeholder="e.g. 34722222222222"
-            className={styles.fullWidthInput}
-          />
-        </label>
-        <div>
-          <button
-            type="button"
-            onClick={() => createAssetMutation.mutate()}
-            disabled={!sdk || createAssetMutation.isPending}
-          >
-            {createAssetMutation.isPending ? 'Adding asset…' : 'Add asset'}
-          </button>
+      <Modal open={addAssetModalOpen} onClose={() => setAddAssetModalOpen(false)} title="Add asset">
+        <p className={styles.modalIntro}>Create and register a new asset in this registry.</p>
+        <p className={styles.modalDemoRow}>
+          Quick demo add:{' '}
+          <Button type="button" variant="secondary" onClick={() => addDemoAssetMutation.mutate()} disabled={!sdk || addDemoAssetMutation.isPending}>
+            {addDemoAssetMutation.isPending ? 'Adding demo asset…' : 'Add demo asset'}
+          </Button>
+        </p>
+        <div className={styles.formGrid}>
+          <label className={styles.formLabel}>
+            Asset ID (bytes32):
+            <Input
+              value={newAssetId}
+              onChange={(e) => setNewAssetId(e.target.value.trim())}
+              placeholder="0x… (64 hex chars)"
+              className={styles.fullWidthInput}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Token address:
+            <Input
+              value={newTokenAddress}
+              onChange={(e) => setNewTokenAddress(e.target.value.trim())}
+              placeholder="0x…"
+              className={styles.fullWidthInput}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Owner address (optional, defaults to connected wallet):
+            <Input
+              value={newOwnerAddress}
+              onChange={(e) => setNewOwnerAddress(e.target.value.trim())}
+              placeholder={address ?? '0x…'}
+              className={styles.fullWidthInput}
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </label>
+          <label className={styles.formLabel}>
+            Subscription price (raw integer, per second):
+            <Input
+              value={newSubscriptionPrice}
+              onChange={(e) => setNewSubscriptionPrice(e.target.value.trim())}
+              placeholder="e.g. 34722222222222"
+              className={styles.fullWidthInput}
+              inputMode="numeric"
+              spellCheck={false}
+              autoComplete="off"
+            />
+          </label>
+          <div>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => createAssetMutation.mutate()}
+              disabled={!sdk || createAssetMutation.isPending}
+            >
+              {createAssetMutation.isPending ? 'Adding asset…' : 'Add asset'}
+            </Button>
+          </div>
         </div>
-      </div>
-      {createAssetMutation.data ? (
-        <p>
-          Tx: <code>{createAssetMutation.data}</code>
-        </p>
-      ) : null}
-      {createAssetMutation.error ? (
-        <p>
-          Add asset error: <code>{(createAssetMutation.error as Error).message}</code>
-        </p>
-      ) : null}
-      {addDemoAssetMutation.data ? (
-        <p>
-          Demo tx: <code>{addDemoAssetMutation.data}</code>
-        </p>
-      ) : null}
-      {addDemoAssetMutation.error ? (
-        <p>
-          Add demo asset error: <code>{(addDemoAssetMutation.error as Error).message}</code>
-        </p>
-      ) : null}
+        {createAssetMutation.data ? (
+          <p className={styles.modalFeedback}>
+            Tx: <code>{createAssetMutation.data}</code>
+          </p>
+        ) : null}
+        {createAssetMutation.error ? (
+          <p className={styles.modalFeedback}>
+            Add asset error: <code>{(createAssetMutation.error as Error).message}</code>
+          </p>
+        ) : null}
+        {addDemoAssetMutation.data ? (
+          <p className={styles.modalFeedback}>
+            Demo tx: <code>{addDemoAssetMutation.data}</code>
+          </p>
+        ) : null}
+        {addDemoAssetMutation.error ? (
+          <p className={styles.modalFeedback}>
+            Add demo asset error: <code>{(addDemoAssetMutation.error as Error).message}</code>
+          </p>
+        ) : null}
+      </Modal>
 
       <hr className={styles.sectionDivider} />
 
       <h2>Assets</h2>
-      <p>
-        Indexer: <code>{appConfig.indexerUrl}</code>
-      </p>
       {assetsQuery.isLoading ? <p>Loading assets…</p> : null}
       {assetsQuery.error ? (
         <p>
@@ -248,14 +247,22 @@ export function RegistryPage() {
 
       <ul className={styles.assetList}>
         {(assetsQuery.data ?? []).map((a: IndexerAssetEntity) => (
-          <li key={a.id} className={styles.assetListItem}>
-            <div>
-              <Link to={`/assets/${a.assetId}`}>{a.assetId}</Link> <span>→</span>{' '}
-              <code>{a.id}</code>
-              {' · '}
-              <Link to={`/assets/${a.assetId}/history`}>History</Link>
+          <li key={a.id} className={styles.assetCard}>
+            <Link to={`/assets/${a.assetId}`} className={styles.assetCardMain}>
+              <span className={styles.assetCardId}>{a.assetId}</span>
+              <span className={styles.assetCardArrow} aria-hidden>
+                →
+              </span>
+              <code className={styles.assetCardAddress}>{a.id}</code>
+            </Link>
+            <div className={styles.assetCardMeta}>
+              <Link to={`/assets/${a.assetId}/history`} className={styles.assetCardSecondaryLink}>
+                History
+              </Link>
             </div>
-            <SubscribeToAssetButton assetId={a.assetId} compact />
+            <div className={styles.assetCardSubscribe}>
+              <SubscribeToAssetButton assetId={a.assetId} compact />
+            </div>
           </li>
         ))}
       </ul>

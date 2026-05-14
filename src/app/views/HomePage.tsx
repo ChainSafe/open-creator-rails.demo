@@ -14,9 +14,7 @@ export function HomePage() {
       </p>
 
       <ul>
-        <li>
-          <Link to="/registry">Go to creator (registry) page</Link>
-        </li>
+        <Link to="/registry">Go to creator (registry) page</Link>
       </ul>
     </div>
   )

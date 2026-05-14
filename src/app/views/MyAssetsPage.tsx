@@ -1,12 +1,16 @@
+import { type IndexerAssetEntity } from '@open-creator-rails/sdk'
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { formatUnits, type Address } from 'viem'
-import { useAccount, useConnect, useDisconnect, usePublicClient } from 'wagmi'
+import { useAccount, usePublicClient } from 'wagmi'
 
-import { createSdkIndexer, type IndexerAssetEntity } from '@open-creator-rails/sdk'
+import { Button } from '../components/Button'
+import { Input } from '../components/Input'
 import { appConfig } from '../config'
+import { createDemoIndexer } from '../indexerClient'
 import { useOcrSdk } from '../ocrSdk'
+import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
 import { erc20MetadataAbi } from '../erc20Permit'
 import styles from './MyAssetsPage.module.scss'
 
@@ -18,9 +22,7 @@ export function MyAssetsPage() {
   const sdk = useOcrSdk()
   const qc = useQueryClient()
   const publicClient = usePublicClient()
-  const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending: isConnecting } = useConnect()
-  const { disconnect } = useDisconnect()
+  const { address } = useAccount()
 
   const [priceDays, setPriceDays] = useState(30)
   const durationSeconds = useMemo(() => BigInt(Math.max(1, priceDays)) * 24n * 60n * 60n, [priceDays])
@@ -29,7 +31,7 @@ export function MyAssetsPage() {
     queryKey: ['indexer', 'listAssetsByRegistry', appConfig.indexerUrl, appConfig.registryAddress],
     queryFn: async () => {
       if (!appConfig.registryAddress) throw new Error('Missing VITE_REGISTRY_ADDRESS')
-      const ix = createSdkIndexer(appConfig.indexerUrl)
+      const ix = createDemoIndexer()
       return ix.listAssetsByRegistry({
         registryAddress: appConfig.registryAddress as Address,
       })
@@ -71,7 +73,8 @@ export function MyAssetsPage() {
       if (!sdk) throw new Error('SDK not ready')
       const entries = await Promise.all(
         myAssets.map(async (asset) => {
-          const price = await sdk.Asset.getSubscriptionPrice({ assetAddress: asset.id, duration: durationSeconds })
+          const count = await countPeriodsCoveringSeconds(sdk, asset.id, durationSeconds)
+          const price = await sdk.Asset.getSubscriptionPrice({ assetAddress: asset.id, count })
           return { assetAddress: asset.id, price }
         }),
       )
@@ -106,24 +109,8 @@ export function MyAssetsPage() {
   })
 
   return (
-    <div>
+    <div className={styles.root}>
       <h1>Your Assets</h1>
-      <div className={styles.walletRow}>
-        {!isConnected ? (
-          <button onClick={() => connect({ connector: connectors[0]! })} disabled={isConnecting}>
-            {isConnecting ? 'Connecting…' : 'Connect wallet'}
-          </button>
-        ) : (
-          <>
-            <button onClick={() => disconnect()}>Disconnect</button>
-            <code>{address}</code>
-          </>
-        )}
-      </div>
-
-      <p className={styles.indexerInfo}>
-        Indexer: <code>{appConfig.indexerUrl}</code>
-      </p>
 
       {!appConfig.registryAddress ? (
         <p>
@@ -135,7 +122,7 @@ export function MyAssetsPage() {
 
       <p>
         Price view/edit helper duration:{' '}
-        <input
+        <Input
           type="number"
           min={1}
           value={priceDays}
@@ -155,14 +142,14 @@ export function MyAssetsPage() {
       <h2>Assets you own</h2>
       {myAssets.length === 0 ? <p>No assets found for your address (or indexer not running).</p> : null}
 
-      <ul>
+      <ul className={styles.assetList}>
         {myAssets.map((a) => {
           const tokenMeta = tokenMetaQuery.data?.get(a.id.toLowerCase())
           const price = pricesQuery.data?.get(a.id.toLowerCase())
 
           return (
-            <li key={a.id} className={styles.assetItem}>
-              <div>
+            <li key={a.id} className={styles.assetCard}>
+              <div className={styles.assetCardBody}>
                 <div>
                   Asset: <code>{a.id}</code>
                 </div>
@@ -210,11 +197,18 @@ function SetPriceRow(props: { disabled: boolean; onSet: (value: string) => void 
     <div className={styles.setPriceRow}>
       <label>
         New price (for chosen duration):{' '}
-        <input value={value} onChange={(e) => setValue(e.target.value)} disabled={props.disabled} />
+        <Input
+          type="text"
+          inputMode="decimal"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          disabled={props.disabled}
+          className={styles.setPriceInput}
+        />
       </label>
-      <button onClick={() => props.onSet(value)} disabled={props.disabled}>
+      <Button type="button" variant="secondary" onClick={() => props.onSet(value)} disabled={props.disabled}>
         Set price
-      </button>
+      </Button>
     </div>
   )
 }

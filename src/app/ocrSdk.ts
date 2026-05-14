@@ -32,6 +32,7 @@ export function useOcrSdk(): OcrSdk | null {
       walletClient: walletClient ?? undefined,
       registryAddress,
       indexerUrl: appConfig.indexerUrl,
+      chainId: appConfig.chain.id,
     })
   }, [publicClient, walletClient])
 }

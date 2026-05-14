@@ -7,6 +7,7 @@
   "scripts": {
     "postinstall": "pnpm -C open-creator-rails.sdk install && pnpm -C open-creator-rails.sdk build",
     "submodule:sdk:update": "git -C open-creator-rails.sdk fetch origin && git -C open-creator-rails.sdk checkout origin/main && git status --short open-creator-rails.sdk",
+    "submodule:indexer:update": "git -C open-creator-rails.indexer fetch origin && git -C open-creator-rails.indexer checkout origin/master && git status --short open-creator-rails.indexer",
     "dev": "vite",
     "dev:anvil": "vite --mode anvil",
     "dev:sepolia": "vite --mode sepolia",

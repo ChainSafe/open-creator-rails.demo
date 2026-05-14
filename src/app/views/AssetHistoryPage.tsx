@@ -1,3 +1,4 @@
+import { resolveOpenCreatorRailsIndexerGraphqlUrl } from '@open-creator-rails/sdk'
 import { useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -66,6 +67,8 @@ function fmtTs(ts: bigint | undefined) {
 export function AssetHistoryPage() {
   const params = useParams<{ assetId: string }>()
 
+  const graphqlUrl = resolveOpenCreatorRailsIndexerGraphqlUrl(appConfig.indexerUrl)
+
   const assetId = useMemo(() => {
     const v = params.assetId
     if (!v) return null
@@ -74,7 +77,7 @@ export function AssetHistoryPage() {
   }, [params.assetId])
 
   const assetEntityQuery = useQuery({
-    queryKey: ['indexer', 'assetEntityByAssetId', appConfig.indexerUrl, assetId],
+    queryKey: ['indexer', 'assetEntityByAssetId', graphqlUrl, assetId],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetId) throw new Error('Missing assetId')
@@ -88,7 +91,7 @@ export function AssetHistoryPage() {
         }
       `
       const data = await indexerQuery<{ assetEntitys: { items: Array<{ id: string }> } }>(
-        appConfig.indexerUrl,
+        graphqlUrl,
         query,
         { assetId: assetId.toLowerCase() },
       )
@@ -102,7 +105,7 @@ export function AssetHistoryPage() {
   const assetAddress = (assetEntityQuery.data?.id ?? null) as Address | null
 
   const createdQuery = useQuery<AssetCreatedEvent[]>({
-    queryKey: ['indexer', 'assetRegistry_AssetCreateds', appConfig.indexerUrl, assetId],
+    queryKey: ['indexer', 'assetRegistry_AssetCreateds', graphqlUrl, assetId],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetId) throw new Error('Missing assetId')
@@ -133,7 +136,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(appConfig.indexerUrl, query, { assetId: assetId.toLowerCase() })
+      }>(graphqlUrl, query, { assetId: assetId.toLowerCase() })
       return data.assetRegistry_AssetCreateds.items.map((e) => ({
         id: e.id,
         asset: e.asset as Address,
@@ -148,7 +151,7 @@ export function AssetHistoryPage() {
   })
 
   const subsAddedQuery = useQuery<SubscriptionAddedEvent[]>({
-    queryKey: ['indexer', 'asset_SubscriptionAddeds', appConfig.indexerUrl, assetAddress],
+    queryKey: ['indexer', 'asset_SubscriptionAddeds', graphqlUrl, assetAddress],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetAddress) throw new Error('Missing asset address')
@@ -179,7 +182,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(appConfig.indexerUrl, query, { assetAddress: assetAddress.toLowerCase() })
+      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase() })
       return data.asset_SubscriptionAddeds.items.map((e) => ({
         id: e.id,
         subscriber: e.subscriber,
@@ -194,7 +197,7 @@ export function AssetHistoryPage() {
   })
 
   const priceUpdatedQuery = useQuery<SubscriptionPriceUpdatedEvent[]>({
-    queryKey: ['indexer', 'asset_SubscriptionPriceUpdateds', appConfig.indexerUrl, assetAddress],
+    queryKey: ['indexer', 'asset_SubscriptionPriceUpdateds', graphqlUrl, assetAddress],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetAddress) throw new Error('Missing asset address')
@@ -217,7 +220,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(appConfig.indexerUrl, query, { assetAddress: assetAddress.toLowerCase() })
+      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase() })
       return data.asset_SubscriptionPriceUpdateds.items.map((e) => ({
         id: e.id,
         newSubscriptionPrice: BigInt(e.newSubscriptionPrice),
@@ -228,7 +231,7 @@ export function AssetHistoryPage() {
   })
 
   const ownershipQuery = useQuery<OwnershipTransferredEvent[]>({
-    queryKey: ['indexer', 'asset_OwnershipTransferreds', appConfig.indexerUrl, assetAddress],
+    queryKey: ['indexer', 'asset_OwnershipTransferreds', graphqlUrl, assetAddress],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetAddress) throw new Error('Missing asset address')
@@ -253,7 +256,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(appConfig.indexerUrl, query, { assetAddress: assetAddress.toLowerCase() })
+      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase() })
       return data.asset_OwnershipTransferreds.items.map((e) => ({
         id: e.id,
         previousOwner: e.previousOwner as Address,

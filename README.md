@@ -15,22 +15,17 @@ The UI is intentionally simple.
 - Foundry (`anvil`, `cast`, `forge`)
 - `jq`
 
-### 1) Initialize submodules
-```bash
-git submodule update --init --recursive
-```
-
-### 2) Install dependencies
+### 1) Install dependencies
 ```bash
 pnpm install --no-frozen-lockfile
 ```
 
-### 3) Start local chain (Anvil)
+### 2) Start local chain (Anvil)
 ```bash
 anvil --chain-id 31337 --port 8545
 ```
 
-### 4) Seed demo contracts + assets (populates the chain)
+### 3) Seed demo contracts + assets (populates the chain)
 In a new terminal:
 ```bash
 ./scripts/local-demo-seed.sh
@@ -42,10 +37,10 @@ This deploys:
 - 3 demo assets
 - mints test tokens to the default Anvil account
 
-Note: the seed script deploys/contracts directly with Foundry and writes the resulting addresses into
-`open-creator-rails.sdk/open-creator-rails/packages/config/src/deployments/` so the indexer and SDK ABIs stay in sync.
+Note: the seed script deploys with Foundry and writes addresses into
+`open-creator-rails.sdk/open-creator-rails/deployments/` (see that repo’s README for the JSON layout).
 
-### 5) Start the indexer (Anvil local indexing)
+### 4) Start the indexer (Anvil local indexing)
 After the chain is seeded, start the indexer so it can ingest the deployments/events and power the UI lists:
 - **Creator (Registry) page** asset list
 - **Your Assets** list
@@ -53,14 +48,20 @@ After the chain is seeded, start the indexer so it can ingest the deployments/ev
 
 This repo includes a local Anvil Ponder config (`ponder.anvil.config.ts`) so you don’t need to modify the submodule’s Sepolia-only config.
 
+Install the indexer’s dependencies once (from this repo root):
+
+```bash
+pnpm -C open-creator-rails.indexer install
+```
+
 In a new terminal, run this exactly (replace the registry address with the one printed by the seed script):
 ```bash
 export VITE_REGISTRY_ADDRESS=0x71C95911E9a5D330f4D621842EC243EE1343292e
 export PONDER_RPC_URL_31337=http://127.0.0.1:8545
-INDEXER_ROOT="./open-creator-rails.sdk/open-creator-rails.indexer"
+INDEXER_ROOT="./open-creator-rails.indexer"
 pnpm -s exec ponder dev \
   --root "$INDEXER_ROOT" \
-  --config ../../ponder.anvil.config.ts
+  --config ../ponder.anvil.config.ts
 ```
 
 That command is the **Anvil indexer**. It will print logs for chain `31337` and start GraphQL on `http://localhost:42069/graphql`.
@@ -83,12 +84,12 @@ Troubleshooting:
 - **`RuntimeError: Aborted()` from `@electric-sql/pglite` / `InitWalRecovery` / `pg_initdb`:** Ponder’s embedded DB (PGLite) did not finish starting—often **corrupted or stale files** under `.ponder` after a crash, killed process, or upgrade. The UI can sit at **“Indexing … 0%”** forever because **backfill never begins** until the DB opens. **Stop Ponder**, delete the dev DB, then start again:
 
 ```bash
-rm -rf ./open-creator-rails.sdk/open-creator-rails.indexer/.ponder
+rm -rf ./open-creator-rails.indexer/.ponder
 ```
 
-Then re-run the `ponder dev` command from step 5.
+Then re-run the indexer `ponder dev` command above.
 
-### 6) Configure the frontend
+### 5) Configure the frontend
 Create a `.env.anvil` in this repo root, or update the one already checked in:
 ```bash
 VITE_CHAIN=anvil
@@ -101,7 +102,7 @@ To get the registry address, use the output from `./scripts/local-demo-seed.sh` 
 
 `VITE_WALLETCONNECT_PROJECT_ID` is optional. If omitted, the demo still works with injected wallets (MetaMask).
 
-### 7) Run the app
+### 6) Run the app
 ```bash
 pnpm dev:anvil
 ```

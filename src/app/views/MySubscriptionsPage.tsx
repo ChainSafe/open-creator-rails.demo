@@ -1,10 +1,14 @@
-import { createSdkIndexer, type IndexerSubscription } from '@open-creator-rails/sdk'
+import { cancelSubscriptionDigest, subscriberHash, type IndexerSubscription } from '@open-creator-rails/sdk'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import type { Address, Hex } from 'viem'
-import { useAccount } from 'wagmi'
+import { useAccount, useWalletClient } from 'wagmi'
 
+import { Button } from '../components/Button'
 import { appConfig } from '../config'
+import { formatUnixSecondsReadable } from '../formatTimestamp'
+import { createDemoIndexer } from '../indexerClient'
+import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { useOcrSdk } from '../ocrSdk'
 import styles from './MySubscriptionsPage.module.scss'
 
@@ -17,6 +21,7 @@ function normalizeAssetAddress(value: string): Address {
 
 export function MySubscriptionsPage() {
   const { address } = useAccount()
+  const { data: walletClient } = useWalletClient({ chainId: appConfig.chain.id })
   const sdk = useOcrSdk()
   const qc = useQueryClient()
 
@@ -24,7 +29,20 @@ export function MySubscriptionsPage() {
     mutationFn: async (assetAddress: Address) => {
       if (!sdk) throw new Error('SDK not ready')
       if (!address) throw new Error('Connect wallet')
-      return sdk.Asset.cancelSubscription({ assetAddress, subscriber: address })
+      if (!walletClient) throw new Error('Wallet not ready')
+
+      const sub = subscriberHash(DEMO_SUBSCRIBER_ID, address)
+      const digest = cancelSubscriptionDigest(appConfig.chain.id, assetAddress, sub)
+      const signature = await walletClient.signMessage({
+        account: address,
+        message: { raw: digest },
+      })
+
+      return sdk.Asset.cancelSubscription({
+        assetAddress,
+        subscriberId: DEMO_SUBSCRIBER_ID,
+        signature: signature as Hex,
+      })
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['indexer', 'listSubscriptionsByUser'] })
@@ -37,8 +55,12 @@ export function MySubscriptionsPage() {
     queryFn: async () => {
       if (!sdk) throw new Error('SDK not ready')
       if (!address) throw new Error('Missing address')
-      const ix = createSdkIndexer(appConfig.indexerUrl)
-      const subs = await ix.listSubscriptionsByUser({ user: address, activeOnly: true })
+      const ix = createDemoIndexer()
+      const subs = await ix.listSubscriptionsByUser({
+        user: address,
+        subscriberId: DEMO_SUBSCRIBER_ID,
+        activeOnly: true,
+      })
       return Promise.all(
         subs.map(async (s: IndexerSubscription): Promise<SubscriptionWithRegistryId> => {
           const assetAddress = normalizeAssetAddress(s.assetAddress)
@@ -54,7 +76,7 @@ export function MySubscriptionsPage() {
   })
 
   return (
-    <div>
+    <div className={styles.root}>
       <h1>Your Subscriptions</h1>
       <p>
         This page lists your subscriptions from the indexer. (If the indexer isn’t running, it will be empty.)
@@ -76,17 +98,26 @@ export function MySubscriptionsPage() {
             cancelMutation.variables.toLowerCase() === s.assetAddress.toLowerCase()
           return (
             <li key={s.id} className={styles.subscriptionListItem}>
-              <span>
-                <Link to={`/assets/${s.registryAssetId}`}>{s.registryAssetId}</Link> — active until{' '}
-                <code>{s.endTime != null ? s.endTime.toString() : '—'}</code>
-              </span>
-              <button
-                type="button"
-                disabled={!sdk || cancelMutation.isPending}
-                onClick={() => cancelMutation.mutate(s.assetAddress)}
-              >
-                {cancellingThis ? 'Cancelling…' : 'Cancel subscription'}
-              </button>
+              <div className={styles.assetAddress}>
+                Asset: <code>{s.assetAddress}</code>
+              </div>
+              <div className={styles.detailCard}>
+                <div className={styles.detailCardBody}>
+                  <Link to={`/assets/${s.registryAssetId}`}>{s.registryAssetId}</Link>
+                  <span> — active until </span>
+                  <code>{formatUnixSecondsReadable(s.endTime)}</code>
+                </div>
+                <div className={styles.detailCardActions}>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    disabled={!sdk || !walletClient || cancelMutation.isPending}
+                    onClick={() => cancelMutation.mutate(s.assetAddress)}
+                  >
+                    {cancellingThis ? 'Cancelling…' : 'Cancel subscription'}
+                  </Button>
+                </div>
+              </div>
             </li>
           )
         })}
@@ -100,4 +131,3 @@ export function MySubscriptionsPage() {
     </div>
   )
 }
-
