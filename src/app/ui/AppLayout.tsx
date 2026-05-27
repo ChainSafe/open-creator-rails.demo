@@ -1,7 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useDisconnect } from 'wagmi'
 
+import { appConfig } from '../config'
 import { Button } from '../components/Button'
+import { useLocalAnvilWallet } from '../useLocalAnvilWallet'
 import { ToastProvider } from '../toast/ToastContext'
 import { useAssetOwnerGate } from '../useAssetOwnerGate'
 import styles from './AppLayout.module.scss'
@@ -21,21 +23,37 @@ function TopLink(props: { to: string; label: string }) {
 
 function HeaderWallet() {
   const { address, isConnected } = useAccount()
-  const { connect, connectors, isPending: isConnecting } = useConnect()
   const { disconnect } = useDisconnect()
+  const {
+    connectWallet,
+    switchToAnvil,
+    isConnecting,
+    needsNetworkSwitch,
+    isLocalAnvilDev,
+  } = useLocalAnvilWallet()
 
   return (
     <div className={styles.wallet}>
       {!isConnected ? (
-        <Button variant="primary" size="sm" onClick={() => connect({ connector: connectors[0]! })} disabled={isConnecting}>
+        <Button variant="primary" size="sm" onClick={connectWallet} disabled={isConnecting}>
           <span className="material-symbols-outlined" style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
           {isConnecting ? 'Connecting\u2026' : 'Connect Wallet'}
         </Button>
       ) : (
         <>
+          {needsNetworkSwitch ? (
+            <Button variant="primary" size="sm" onClick={switchToAnvil} disabled={isConnecting}>
+              {isConnecting ? 'Switching\u2026' : 'Switch to Anvil'}
+            </Button>
+          ) : null}
           <code className={styles.walletAddress} title={address}>
             {address ? shortenAddress(address) : ''}
           </code>
+          {isLocalAnvilDev && !needsNetworkSwitch ? (
+            <span className={styles.chainBadge} title={`Chain ID ${appConfig.chain.id}`}>
+              Anvil
+            </span>
+          ) : null}
           <Button variant="secondary" size="sm" onClick={() => disconnect()}>
             Disconnect
           </Button>
