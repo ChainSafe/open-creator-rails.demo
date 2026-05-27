@@ -1,49 +1,20 @@
 .page {
   display: flex;
   flex-direction: column;
-  align-items: center;
-}
-
-.seedHint {
-  margin-top: -4px;
-  font-size: 13px;
-}
-
-.formGrid {
-  display: grid;
-  gap: 8px;
-  max-width: 100%;
-}
-
-.addAssetTriggerRow {
-  margin-top: 16px;
-}
-
-.modalIntro {
-  margin: 0 0 12px;
-}
-
-.modalDemoRow {
-  margin: 0 0 16px;
-}
-
-.modalFeedback {
-  margin: 14px 0 0;
-  word-break: break-word;
-}
-
-.formLabel {
-  display: block;
-}
-
-.fullWidthInput {
   width: 100%;
 }
 
-.sectionDivider {
-  margin: 16px 0;
-  border: none;
-  border-top: 1px solid var(--border);
+.pageHeader {
+  border-bottom: 1px solid var(--outline-variant);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.pageSubtitle {
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--on-surface-variant);
+  margin-top: 8px;
 }
 
 .assetList {
@@ -51,88 +22,79 @@
   padding: 0;
   margin: 0;
   width: 100%;
-  max-width: 42rem;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (min-width: 1200px) {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 .assetCard {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  background: var(--code-bg);
-  box-sizing: border-box;
+  position: relative;
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  border-radius: 8px;
+  padding: 24px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-items: stretch;
+  gap: 12px;
+  transition: border-color 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--primary);
+
+    .assetCardName {
+      color: var(--primary);
+    }
+  }
+}
+
+.assetCardAccent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
 }
 
 .assetCardMain {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 10px;
-  color: var(--text-h);
-  text-decoration: none;
-  border-radius: 6px;
-  transition: color 0.15s ease, background 0.15s ease;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--on-surface);
+  flex: 1;
+}
 
-  &:hover {
-    color: var(--accent);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+.assetCardName {
+  font-family: var(--heading);
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  color: var(--on-surface);
+  transition: color 0.2s;
 }
 
 .assetCardId {
-  font-weight: 600;
-  word-break: break-all;
-}
-
-.assetCardArrow {
-  flex-shrink: 0;
-  color: var(--text);
-}
-
-.assetCardAddress {
-  font-size: 0.9em;
-  word-break: break-all;
-}
-
-.assetCardMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.assetCardSecondaryLink {
-  font-size: 0.95rem;
-  color: var(--text-h);
-  text-decoration: none;
-
-  &:hover {
-    color: var(--accent);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--on-surface-variant);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .assetCardSubscribe {
-  margin-top: 4px;
+  margin-top: auto;
   padding-top: 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--outline-variant);
 }

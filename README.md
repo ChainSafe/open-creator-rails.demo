@@ -1,13 +1,16 @@
 # Open Creator Rails Demo (Patreon-style)
 
 This is a minimal Patreon-style demo app:
-- **AssetRegistry** = the “creator backend”
+- **AssetRegistry** = the "creator backend"
 - **Assets** = gated offerings created via the registry
 - **Subscribers** = users who subscribe via a permit-based token payment (EIP-2612)
+- **Mock API** = local service that returns a demo content URL only to subscribed users (reads `registries_*.json` for labels/URLs)
 
 The UI is intentionally simple.
 
-## Local development (populated Anvil + indexer)
+---
+
+## Local development — complete setup
 
 ### Prerequisites
 - Node.js v22+
@@ -15,48 +18,104 @@ The UI is intentionally simple.
 - Foundry (`anvil`, `cast`, `forge`)
 - `jq`
 
-### 1) Install dependencies
+### Quick start (one command)
+
+```bash
+pnpm install --no-frozen-lockfile
+pnpm -C open-creator-rails.indexer install
+pnpm dev:local
+```
+
+This single script starts Anvil, seeds contracts, starts the indexer, launches the mock API, and opens the Vite dev server. Press Ctrl+C to stop everything.
+
+When startup finishes, the terminal prints **two Anvil private keys** you can import into MetaMask (add network **Localhost 8545**, chain ID **31337**):
+
+| Role | Address | Private key |
+|------|---------|-------------|
+| **Asset owner** — deploys contracts, owns the three demo assets, receives minted TEST | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d` |
+| **Regular user** — same TEST mint as the owner (for subscribing as a non-owner) | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | `0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a` |
+
+Both keys are well-known Anvil defaults; use them **only on local Anvil**, never on a public network. The seed script also prints these keys right after minting.
+
+If you prefer to run each service manually (e.g. for debugging), follow the step-by-step instructions below.
+
+### Overview
+
+You will run **5 processes** in separate terminals:
+
+| # | Process | Port | Purpose |
+|---|---------|------|---------|
+| 1 | Anvil | 8545 | Local EVM chain |
+| 2 | Seed script | — | Deploys contracts + mints tokens (one-shot) |
+| 3 | Ponder indexer | 42069 | Indexes on-chain events → GraphQL |
+| 4 | Mock API | 4100 | Subscription check + demo gated URL |
+| 5 | Vite dev server | 5173 | Frontend app |
+
+---
+
+### Step 1 — Install dependencies
+
 ```bash
 pnpm install --no-frozen-lockfile
 ```
 
-### 2) Start local chain (Anvil)
+This also builds the `@open-creator-rails/sdk` workspace package (via `postinstall`).
+
+Install the indexer's dependencies:
+
+```bash
+pnpm -C open-creator-rails.indexer install
+```
+
+---
+
+### Step 2 — Start local chain (Anvil)
+
+**Terminal 1:**
+
 ```bash
 anvil --chain-id 31337 --port 8545
 ```
 
-### 3) Seed demo contracts + assets (populates the chain)
-In a new terminal:
+Leave it running. Anvil provides 10 pre-funded accounts; the seed script uses account #1 (`0x70997...`).
+
+---
+
+### Step 3 — Seed contracts + assets
+
+**Terminal 2:**
+
 ```bash
 ./scripts/local-demo-seed.sh
 ```
 
 This deploys:
 - `TestToken` (ERC20Permit, 6 decimals)
-- `AssetRegistry`
-- 3 demo assets
-- mints test tokens to the default Anvil account
+- `AssetRegistry` (20% registry fee)
+- 3 demo assets (`demo_asset_1`, `demo_asset_2`, `demo_asset_3`)
+- Mints 1,000,000 TEST (6 decimals) to the **asset owner** (Anvil account #1) and the same amount to a **demo regular user** (Anvil account #2) for subscription flows
 
-Note: the seed script deploys with Foundry and writes addresses into
-`open-creator-rails.sdk/open-creator-rails/deployments/` (see that repo’s README for the JSON layout).
-
-### 4) Start the indexer (Anvil local indexing)
-After the chain is seeded, start the indexer so it can ingest the deployments/events and power the UI lists:
-- **Creator (Registry) page** asset list
-- **Your Assets** list
-- **Your Subscriptions** list
-
-This repo includes a local Anvil Ponder config (`ponder.anvil.config.ts`) so you don’t need to modify the submodule’s Sepolia-only config.
-
-Install the indexer’s dependencies once (from this repo root):
-
-```bash
-pnpm -C open-creator-rails.indexer install
+**Important — note the output.** It prints:
+```
+AssetRegistry: 0x<REGISTRY_ADDRESS>
+Asset: 0x<ASSET_1_ADDRESS> (assetIdHash: 0x...)
+Asset: 0x<ASSET_2_ADDRESS> (assetIdHash: 0x...)
+Asset: 0x<ASSET_3_ADDRESS> (assetIdHash: 0x...)
 ```
 
-In a new terminal, run this exactly (replace the registry address with the one printed by the seed script):
+It also prints **MetaMask-friendly private keys** for the asset owner and the demo regular user (see the Quick start table above).
+
+The script writes all addresses into:
+`open-creator-rails.sdk/open-creator-rails/deployments/registries_31337.json`
+
+---
+
+### Step 4 — Start the indexer
+
+**Terminal 3:**
+
 ```bash
-export VITE_REGISTRY_ADDRESS=0x71C95911E9a5D330f4D621842EC243EE1343292e
+export VITE_REGISTRY_ADDRESS=0x<REGISTRY_ADDRESS_FROM_STEP_3>
 export PONDER_RPC_URL_31337=http://127.0.0.1:8545
 INDEXER_ROOT="./open-creator-rails.indexer"
 pnpm -s exec ponder dev \
@@ -64,137 +123,154 @@ pnpm -s exec ponder dev \
   --config ../ponder.anvil.config.ts
 ```
 
-That command is the **Anvil indexer**. It will print logs for chain `31337` and start GraphQL on `http://localhost:42069/graphql`.
+Wait until it says indexing is complete. GraphQL is then available at `http://localhost:42069/graphql`.
 
-Verify indexing (in another terminal) — Ponder exposes the list field as `assetEntitys` (note the spelling):
+**Verify** (optional):
 ```bash
 curl -s http://localhost:42069/graphql \
   -H 'content-type: application/json' \
-  -d '{"query":"query { assetEntitys(limit: 1000) { items { id assetId registryAddress owner } } }"}'
+  -d '{"query":"{ assetEntitys(limit: 10) { items { id assetId owner } } }"}'
 ```
 
-The demo lists assets via `@open-creator-rails/sdk` (`OcrSdk.indexer.listAssetsByRegistry`) and subscriptions via `indexer.listSubscriptionsByUser`, which use the same GraphQL API.
+**Troubleshooting:**
+- If Ponder prints `Port in use`, note the actual port and update `VITE_INDEXER_URL` in `.env.anvil`.
+- If you see `RuntimeError: Aborted()` from PGLite, delete the stale DB and restart:
+  ```bash
+  rm -rf ./open-creator-rails.indexer/.ponder
+  ```
 
-The indexer GraphQL will be available at `http://localhost:42069/graphql`.
+---
 
-If Ponder prints `Port in use` and starts on a different port (e.g. `42070`), use the port it prints and set:
-`VITE_INDEXER_URL=http://localhost:<port>/graphql`.
+### Step 5 — Start the mock API
 
-Troubleshooting:
-- **`RuntimeError: Aborted()` from `@electric-sql/pglite` / `InitWalRecovery` / `pg_initdb`:** Ponder’s embedded DB (PGLite) did not finish starting—often **corrupted or stale files** under `.ponder` after a crash, killed process, or upgrade. The UI can sit at **“Indexing … 0%”** forever because **backfill never begins** until the DB opens. **Stop Ponder**, delete the dev DB, then start again:
+**Terminal 4:**
 
 ```bash
-rm -rf ./open-creator-rails.indexer/.ponder
+pnpm dev:mock-api
 ```
 
-Then re-run the indexer `ponder dev` command above.
+This starts a Node server on `http://localhost:4100` that:
+1. Receives `GET /api/gated-urls?assetAddress=0x...&user=0x...`
+2. Queries the Ponder indexer for an active subscription
+3. If subscribed → returns `{ "name", "url" }`; if not → `403`
 
-### 5) Configure the frontend
-Create a `.env.anvil` in this repo root, or update the one already checked in:
+Names and URL paths for **seeded** demo assets come from `open-creator-rails.sdk/open-creator-rails/deployments/registries_<chainId>.json` (written by the seed script). There is no separate override file in this repo.
+
+**Endpoints:**
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/gated-urls?assetAddress=...&user=...` | Returns `{ "name", "url" }` if subscribed, else `403` |
+| `GET /api/assets` | Lists assets known from the deployments file |
+| `GET /api/health` | Health check |
+
+**Environment variables** (all optional):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MOCK_API_PORT` | `4100` | Server port |
+| `INDEXER_URL` | `http://localhost:42069/graphql` | Ponder GraphQL endpoint |
+| `SUBSCRIBER_ID` | `demo` | Must match `DEMO_SUBSCRIBER_ID` in the frontend |
+| `CHAIN_ID` | `31337` | Chain id used to pick `registries_<CHAIN_ID>.json` |
+
+---
+
+### Step 6 — Configure and run the frontend
+
+**Update `.env.anvil`** with the registry address from step 3:
+
 ```bash
 VITE_CHAIN=anvil
 VITE_RPC_URL=http://127.0.0.1:8545
 VITE_INDEXER_URL=http://localhost:42069/graphql
-VITE_REGISTRY_ADDRESS=0xYourRegistryAddress
+VITE_REGISTRY_ADDRESS=0x<REGISTRY_ADDRESS_FROM_STEP_3>
+VITE_MOCK_API_URL=http://localhost:4100
 ```
 
-To get the registry address, use the output from `./scripts/local-demo-seed.sh` (it prints the `AssetRegistry: 0x...` line).
+**Terminal 5:**
 
-`VITE_WALLETCONNECT_PROJECT_ID` is optional. If omitted, the demo still works with injected wallets (MetaMask).
-
-### 6) Run the app
 ```bash
 pnpm dev:anvil
 ```
 
+Open `http://localhost:5173` in your browser.
+
+---
+
+### Step 7 — Use the app
+
+1. **Connect wallet** — use MetaMask with one of Anvil's default accounts (import private key `0xac0974...` or `0x59c699...`).
+2. **Browse assets** — the Creator Profile page lists the 3 seeded assets.
+3. **Subscribe** — navigate to an asset and subscribe (the permit flow approves + pays in one signature).
+4. **See gated URLs** — once subscribed, the Asset page fetches from the mock API and displays the unlocked URLs.
+5. **Cancel** — cancel your subscription; the gated URLs disappear (mock API returns `403`).
+
+---
+
 ## Sepolia development
 
-The repo also includes `.env.sepolia` for the hosted Sepolia demo configuration. Run:
+The repo also includes `.env.sepolia` for the hosted Sepolia demo configuration:
 
 ```bash
 pnpm dev:sepolia
 ```
 
-If you need different Sepolia RPC/indexer/registry settings, edit `.env.sepolia` instead of changing the local Anvil file.
+Edit `.env.sepolia` for different Sepolia RPC/indexer/registry settings.
 
-## Scripts
-- `./scripts/local-demo-seed.sh`: deploys and seeds local Anvil with a registry + assets.
+---
 
-## Useful commands
-```bash
-pnpm build
-pnpm build:anvil
-pnpm build:sepolia
-pnpm lint
-pnpm preview
+## All scripts
+
+| Script | Description |
+|--------|-------------|
+| `pnpm dev:local` | **Start everything** (Anvil + seed + indexer + mock API + frontend) |
+| `pnpm dev:anvil` | Frontend dev server (local Anvil) |
+| `pnpm dev:sepolia` | Frontend dev server (Sepolia) |
+| `pnpm dev:mock-api` | Mock API server (subscription-gated demo URL) |
+| `pnpm build` / `pnpm build:anvil` / `pnpm build:sepolia` | Production builds |
+| `pnpm lint` | ESLint |
+| `pnpm preview` | Serve production build locally |
+| `./scripts/local-demo-seed.sh` | Deploy contracts + seed data on Anvil |
+
+---
+
+## Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────────────┐
+│   Browser   │────▶│  Vite (5173) │     │   Anvil RPC (8545)  │
+│  (React UI) │     └──────────────┘     └─────────────────────┘
+│             │                                     │
+│  subscribe ─┼───── ERC-2612 permit tx ───────────▶│
+│             │                                     │
+│  gated URLs─┼──▶ ┌─────────────────────┐         │
+│             │    │ Mock API (4100)      │         │
+└─────────────┘    │                     │         │
+                   │  check subscription─┼──▶ ┌────┴────────────┐
+                   │  return URLs        │    │ Ponder (42069)   │
+                   └─────────────────────┘    │ (GraphQL indexer)│
+                                              └─────────────────┘
 ```
 
-Currently, two official plugins are available:
+1. **User subscribes** via the frontend (ERC-2612 permit → `AssetRegistry.subscribe`)
+2. **Ponder** indexes the `SubscriptionAdded` event
+3. **Frontend** calls the **mock API** with `assetAddress` + `user`
+4. **Mock API** queries the indexer for an active subscription → returns gated URLs or `403`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Project structure
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+├── mock-api/
+│   └── server.mjs                   # Local mock API (gated demo URL)
+├── open-creator-rails.sdk/          # SDK submodule (contracts + TS client)
+├── open-creator-rails.indexer/      # Ponder indexer submodule
+├── scripts/
+│   └── local-demo-seed.sh           # Deploys contracts on local Anvil
+├── src/
+│   └── app/                         # React frontend
+├── .env.anvil                       # Local dev env vars
+├── .env.sepolia                     # Sepolia env vars
+└── ponder.anvil.config.ts           # Local Ponder config (chain 31337)
 ```

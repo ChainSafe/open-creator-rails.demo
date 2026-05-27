@@ -26,4 +26,5 @@ export const appConfig = {
   indexerUrl:
     trimEnv(import.meta.env.VITE_INDEXER_URL) ??
     (chainKey === 'sepolia' ? 'https://indexer-api-production-c33d.up.railway.app/' : 'http://localhost:42069/graphql'),
+  mockApiUrl: trimEnv(import.meta.env.VITE_MOCK_API_URL) ?? 'http://localhost:4100',
 } as const

@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { formatUnits, hexToSignature, isHex } from 'viem'
 import type { Hex } from 'viem'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -12,6 +11,7 @@ import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { useOcrSdk } from '../ocrSdk'
 import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
 import { erc20PermitAbi } from '../erc20Permit'
+import { useToast } from '../toast/ToastContext'
 import styles from './SubscribeToAssetButton.module.scss'
 
 type Props = {
@@ -23,6 +23,7 @@ type Props = {
 export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
   const sdk = useOcrSdk()
   const qc = useQueryClient()
+  const { showToast } = useToast()
   const { address, isConnected } = useAccount()
   const { data: walletClient } = useWalletClient({ chainId: appConfig.chain.id })
   const publicClient = usePublicClient({ chainId: appConfig.chain.id })
@@ -166,6 +167,10 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       await qc.invalidateQueries({ queryKey: ['ocr', 'subscriptionStatus'] })
       await qc.invalidateQueries({ queryKey: ['indexer', 'listSubscriptionsByUser'] })
     },
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : String(err)
+      showToast(message, { variant: 'error' })
+    },
   })
 
   return (
@@ -176,7 +181,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
             Token: <code>{tokenAddressQuery.data ?? '(loading)'}</code>
           </p>
           <p>
-            Duration:{' '}
+            Days to subscribe:{' '}
             <Input
               type="number"
               min={1}
@@ -187,7 +192,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
             days
           </p>
           <p>
-            Price:{' '}
+            Total for selected days:{' '}
             <code>
               {priceQuery.data && tokenMetaQuery.data
                 ? `${formatUnits(priceQuery.data, tokenMetaQuery.data.decimals)} ${tokenMetaQuery.data.name}`
@@ -229,12 +234,6 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       ) : statusQuery.data?.isActive ? (
         <span className={compact ? styles.subscribedCompact : undefined}>
           <strong>Subscribed</strong>
-          {compact ? (
-            <>
-              {' · '}
-              <Link to={`/assets/${assetId}`}>Details</Link>
-            </>
-          ) : null}
         </span>
       ) : (
         <Button
@@ -257,11 +256,6 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       {!compact && subscribeMutation.data ? (
         <p>
           Tx: <code>{subscribeMutation.data}</code>
-        </p>
-      ) : null}
-      {subscribeMutation.error ? (
-        <p className={compact ? `${styles.error} ${styles.errorCompact}` : styles.error}>
-          {(subscribeMutation.error as Error).message}
         </p>
       ) : null}
     </div>

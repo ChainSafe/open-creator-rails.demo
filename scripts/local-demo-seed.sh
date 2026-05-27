@@ -23,8 +23,11 @@ SUBSCRIPTION_DURATION_SECONDS=1
 
 RPC_URL="${RPC_URL:-http://127.0.0.1:8545}"
 
-# Default Anvil private key #0
+# Default Anvil private key #1 — registry owner, demo asset owner, deployer for this seed.
 PRIVATE_KEY="${PRIVATE_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
+
+# Anvil private key #2 — separate “regular user” for MetaMask (subscriptions only).
+USER_DEMO_PRIVATE_KEY="${USER_DEMO_PRIVATE_KEY:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
 
 export RPC_URL PRIVATE_KEY
 
@@ -40,6 +43,7 @@ echo "Building contracts (Foundry)…"
 forge build
 
 registry_owner="$(cast wallet address --private-key "$PRIVATE_KEY")"
+user_demo_addr="$(cast wallet address --private-key "$USER_DEMO_PRIVATE_KEY")"
 
 echo "Deploying TestToken (direct forge, without modifying submodule)…"
 test_token_json="$(forge create --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" src/TestToken.sol:TestToken --broadcast --json)"
@@ -88,6 +92,9 @@ echo "Minting test tokens to registry owner: $registry_owner"
 # mint 1,000,000 TEST with 6 decimals
 cast send "$token_address" "mint(address,uint256)" "$registry_owner" 1000000000000 --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" >/dev/null
 
+echo "Minting test tokens to demo user: $user_demo_addr"
+cast send "$token_address" "mint(address,uint256)" "$user_demo_addr" 1000000000000 --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" >/dev/null
+
 echo "Creating demo assets…"
 create_asset() {
   local human_id="$1"
@@ -116,6 +123,25 @@ create_asset "demo_asset_1" 10
 create_asset "demo_asset_2" 20
 create_asset "demo_asset_3" 30
 
+echo ""
+echo "───────────────────────────────────────────────────────────────────"
+echo "LOCAL DEMO WALLET KEYS (Anvil only — never use on mainnet)"
+echo "───────────────────────────────────────────────────────────────────"
+echo "Asset owner (deploys contracts, owns demo assets, has TEST):"
+echo "  Address:     $registry_owner"
+echo "  Private key: $PRIVATE_KEY"
+echo ""
+echo "Regular user (TEST minted for subscribing / marketplace flows):"
+echo "  Address:     $user_demo_addr"
+echo "  Private key: $USER_DEMO_PRIVATE_KEY"
+echo "───────────────────────────────────────────────────────────────────"
+echo ""
+# Machine-readable lines for scripts (e.g. dev-local.sh) — grep-friendly.
+echo "SEED_DEMO_ASSET_OWNER_ADDRESS=$registry_owner"
+echo "SEED_DEMO_ASSET_OWNER_PRIVATE_KEY=$PRIVATE_KEY"
+echo "SEED_DEMO_USER_ADDRESS=$user_demo_addr"
+echo "SEED_DEMO_USER_PRIVATE_KEY=$USER_DEMO_PRIVATE_KEY"
+echo ""
 echo "Done. Start indexer in another terminal with:"
 echo "  (cd \"$INDEXER_DIR\" && pnpm dev)"
 

@@ -1,0 +1,115 @@
+.viewport {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+
+  @media (min-width: 768px) {
+    left: auto;
+    max-width: 400px;
+  }
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--outline-variant);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  animation: toastIn 0.22s ease-out;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toastIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toastBody {
+  flex: 1;
+  min-width: 0;
+  padding: 1px 0;
+}
+
+.toastDismiss {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin: 0;
+  margin-left: 2px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+
+  &:hover {
+    color: var(--on-surface);
+    background: var(--surface-container-highest);
+  }
+}
+
+.toastDismissIcon {
+  font-size: 18px;
+  line-height: 1;
+  display: block;
+}
+
+.variantSuccess {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.12);
+
+  .toastIcon {
+    color: #10b981;
+  }
+}
+
+.variantError {
+  border-color: rgba(225, 29, 72, 0.45);
+  background: rgba(225, 29, 72, 0.1);
+
+  .toastIcon {
+    color: #e11d48;
+  }
+}
+
+.variantInfo {
+  .toastIcon {
+    color: var(--primary);
+  }
+}
