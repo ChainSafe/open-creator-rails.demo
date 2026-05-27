@@ -3,7 +3,9 @@
  *
  * Checks subscription status via the Ponder indexer, then returns a demo URL
  * only for active subscribers. Asset names and URL paths come from the SDK
- * deployments file written by `local-demo-seed.sh` (`registries_<chainId>.json`).
+ * deployments file written by `local-demo-seed.sh` (`registries_<chainId>.json`),
+ * plus optional `services.json`: **asset contract address (lowercase) → { name, url }**
+ *   written by `POST /api/register-service` (Creator Console).
  *
  * Usage:
  *   node mock-api/server.mjs
@@ -11,23 +13,35 @@
  * Env:
  *   MOCK_API_PORT        (default 4100)
  *   INDEXER_URL          (default http://localhost:42069/graphql)
+ *   RPC_URL              (default http://127.0.0.1:8545) — on-chain fallback when indexer lags
  *   SUBSCRIBER_ID        (default "demo" — matches DEMO_SUBSCRIBER_ID in the frontend)
  *   CHAIN_ID             (default 31337)
  */
 
 import { createServer } from 'node:http'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { encodeAbiParameters, keccak256 } from 'viem'
+import { decodeFunctionResult, encodeAbiParameters, encodeFunctionData, keccak256 } from 'viem'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT_DIR = join(__dirname, '..')
 
 const PORT = Number(process.env.MOCK_API_PORT) || 4100
 const INDEXER_URL = process.env.INDEXER_URL || 'http://localhost:42069/graphql'
+const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8545'
 const SUBSCRIBER_ID = process.env.SUBSCRIBER_ID || 'demo'
 const CHAIN_ID = process.env.CHAIN_ID || '31337'
+
+const ASSET_IS_SUBSCRIPTION_ACTIVE_ABI = [
+  {
+    type: 'function',
+    name: 'isSubscriptionActive',
+    stateMutability: 'view',
+    inputs: [{ name: 'subscriber', type: 'bytes32' }],
+    outputs: [{ name: '', type: 'bool' }],
+  },
+]
 
 // ---------------------------------------------------------------------------
 // Demo labels for seeded assets (matches `assetId` in deployments JSON)
@@ -44,50 +58,118 @@ function getServiceName(assetId) {
 }
 
 // ---------------------------------------------------------------------------
-// Resolve name + gated URL from deployments only
+// Optional runtime registry (Creator Console → POST /api/register-service)
+// ---------------------------------------------------------------------------
+
+const SERVICES_FILE = join(__dirname, 'services.json')
+
+let _servicesByAssetAddress = {}
+
+/** Normalize persisted map: keys = lowercase asset address, values = { name, url } only. */
+function normalizeServicesFileShape(raw) {
+  const out = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const [addr, v] of Object.entries(raw)) {
+    if (!addr.startsWith('0x')) continue
+    if (!v || typeof v !== 'object') continue
+    const name = v.name
+    const url = v.url ?? v.endpointUrl
+    if (typeof name !== 'string' || typeof url !== 'string') continue
+    out[addr.toLowerCase()] = { name, url }
+  }
+  return out
+}
+
+try {
+  if (existsSync(SERVICES_FILE)) {
+    _servicesByAssetAddress = normalizeServicesFileShape(JSON.parse(readFileSync(SERVICES_FILE, 'utf-8')))
+  }
+} catch (err) {
+  console.warn('[services] Could not read services.json, starting empty:', err.message)
+}
+
+function loadServicesByAssetAddress() {
+  return _servicesByAssetAddress
+}
+
+function saveServicesByAssetAddress(map) {
+  _servicesByAssetAddress = map
+  try {
+    writeFileSync(SERVICES_FILE, JSON.stringify(map, null, 2) + '\n')
+  } catch (err) {
+    console.warn('[services] Could not persist services.json (in-memory only):', err.message)
+  }
+}
+
+/** Persist API name + URL for one Asset contract address (lowercase key in `services.json`). */
+function registerApiByAssetAddress(assetAddress, name, url) {
+  const key = assetAddress.toLowerCase()
+  const map = { ...loadServicesByAssetAddress(), [key]: { name, url } }
+  saveServicesByAssetAddress(map)
+}
+
+// ---------------------------------------------------------------------------
+// Per–asset-address metadata (deployments + address-keyed services.json)
 // ---------------------------------------------------------------------------
 
 /**
- * Reads deployed asset addresses from the SDK deployments JSON
- * (written by local-demo-seed.sh). Returns a map of lowercase address → metadata.
+ * `Map<lowercase asset contract address, row>` — deployment row plus optional name/url overlay
+ * from `services.json` (same address key).
  */
-function loadDeployedAssets() {
+function buildAssetMetadataByAddress() {
   const deploymentsFile = join(
     ROOT_DIR, 'open-creator-rails.sdk', 'open-creator-rails', 'deployments', `registries_${CHAIN_ID}.json`
   )
-  const map = new Map()
+  const byAddress = new Map()
 
   if (existsSync(deploymentsFile)) {
     const registries = JSON.parse(readFileSync(deploymentsFile, 'utf-8'))
     for (const registry of registries) {
       for (const asset of registry.assets ?? []) {
-        map.set(asset.address.toLowerCase(), {
+        const addr = asset.address.toLowerCase()
+        byAddress.set(addr, {
           assetId: asset.assetId,
           assetIdHash: asset.assetIdHash,
           subscriptionPrice: asset.subscriptionPrice,
           name: getServiceName(asset.assetId),
+          url: undefined,
         })
       }
     }
   }
 
-  return map
+  for (const [addr, overlay] of Object.entries(loadServicesByAssetAddress())) {
+    const existing = byAddress.get(addr) ?? {
+      assetId: null,
+      assetIdHash: null,
+      subscriptionPrice: null,
+      name: overlay.name,
+      url: undefined,
+    }
+    existing.name = overlay.name
+    existing.url = overlay.url
+    byAddress.set(addr, existing)
+  }
+
+  return byAddress
 }
 
 function getServiceNameForAddress(assetAddress) {
   const key = assetAddress.toLowerCase()
-  const deployed = loadDeployedAssets()
-  const meta = deployed.get(key)
+  const meta = buildAssetMetadataByAddress().get(key)
   return meta?.name ?? `Service ${key.slice(0, 10)}`
 }
 
+/** Gated response for subscribers: name + URL for this asset contract address. */
 function getGatedContent(assetAddress) {
   const key = assetAddress.toLowerCase()
-  const deployed = loadDeployedAssets()
-  const meta = deployed.get(key)
+  const meta = buildAssetMetadataByAddress().get(key)
+  if (meta?.url) {
+    return { name: meta.name ?? 'Service', url: meta.url }
+  }
   if (meta?.assetId) {
     return {
-      name: meta.name,
+      name: meta.name ?? 'Service',
       url: `https://api.mock-service.local/v1/${meta.assetId}`,
     }
   }
@@ -111,10 +193,45 @@ function subscriberHash(subscriberId, userAddress) {
   )
 }
 
+async function isSubscriptionActiveOnchain(assetAddress, subscriberBytes32) {
+  try {
+    const data = encodeFunctionData({
+      abi: ASSET_IS_SUBSCRIPTION_ACTIVE_ABI,
+      functionName: 'isSubscriptionActive',
+      args: [subscriberBytes32],
+    })
+    const res = await fetch(RPC_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_call',
+        params: [{ to: assetAddress, data }, 'latest'],
+      }),
+    })
+    if (!res.ok) return false
+    const json = await res.json()
+    if (json.error) return false
+    const raw = json.result
+    if (!raw || raw === '0x') return false
+    return decodeFunctionResult({
+      abi: ASSET_IS_SUBSCRIPTION_ACTIVE_ABI,
+      functionName: 'isSubscriptionActive',
+      data: raw,
+    })
+  } catch {
+    return false
+  }
+}
+
 async function checkSubscription(assetAddress, userAddress) {
   const subHash = subscriberHash(SUBSCRIBER_ID, userAddress)
 
-  const query = `
+  let indexerSaysActive = false
+
+  try {
+    const query = `
     query CheckSubscription($assetAddress: String!, $subscriber: String!) {
       subscriptions(
         where: { assetId_contains: $assetAddress, subscriber: $subscriber }
@@ -129,33 +246,39 @@ async function checkSubscription(assetAddress, userAddress) {
     }
   `
 
-  const resp = await fetch(INDEXER_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      query,
-      variables: {
-        assetAddress: assetAddress.toLowerCase(),
-        subscriber: subHash,
-      },
-    }),
-  })
+    const resp = await fetch(INDEXER_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        variables: {
+          assetAddress: assetAddress.toLowerCase(),
+          subscriber: subHash,
+        },
+      }),
+    })
 
-  if (!resp.ok) {
-    console.error(`Indexer responded ${resp.status}`)
-    return false
+    if (!resp.ok) {
+      console.warn(`[subscription] indexer HTTP ${resp.status}, using RPC fallback`)
+    } else {
+      const json = await resp.json()
+      if (json.errors?.length) {
+        console.warn('[subscription] indexer GraphQL error, using RPC fallback:', json.errors[0]?.message)
+      } else {
+        const items = json?.data?.subscriptions?.items ?? []
+        if (items.length > 0) {
+          const sub = items[0]
+          const nowSeconds = BigInt(Math.floor(Date.now() / 1000))
+          if (!sub.isRevoked && BigInt(sub.endTime) > nowSeconds) indexerSaysActive = true
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[subscription] indexer request failed, using RPC fallback:', e?.message ?? e)
   }
 
-  const json = await resp.json()
-  const items = json?.data?.subscriptions?.items ?? []
-
-  if (items.length === 0) return false
-
-  const sub = items[0]
-  if (sub.isRevoked) return false
-
-  const nowSeconds = BigInt(Math.floor(Date.now() / 1000))
-  return BigInt(sub.endTime) > nowSeconds
+  if (indexerSaysActive) return true
+  return isSubscriptionActiveOnchain(assetAddress, subHash)
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +287,7 @@ async function checkSubscription(assetAddress, userAddress) {
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 }
 
@@ -209,11 +332,11 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  // GET /api/assets — lists assets from deployments file
+  // GET /api/assets — lists merged metadata by asset contract address
   if (url.pathname === '/api/assets' && req.method === 'GET') {
-    const deployed = loadDeployedAssets()
+    const byAddress = buildAssetMetadataByAddress()
     const assets = []
-    for (const [addr, meta] of deployed) {
+    for (const [addr, meta] of byAddress) {
       assets.push({ address: addr, ...meta })
     }
     return json(res, 200, { assets })
@@ -229,28 +352,53 @@ const server = createServer(async (req, res) => {
     return json(res, 200, { name, endpointUrl })
   }
 
+  // POST /api/register-service — body: { assetAddress, name, endpointUrl } (optional assetIdHash for logs only)
+  if (url.pathname === '/api/register-service' && req.method === 'POST') {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    try {
+      const parsed = JSON.parse(body)
+      const { assetAddress, name, endpointUrl, assetIdHash } = parsed
+      if (!assetAddress || !name || !endpointUrl) {
+        return json(res, 400, {
+          error: 'Missing assetAddress, name, or endpointUrl',
+        })
+      }
+      registerApiByAssetAddress(assetAddress, name, endpointUrl)
+      const addr = assetAddress.toLowerCase()
+      const logSuffix = assetIdHash ? ` assetIdHash=${assetIdHash}` : ''
+      console.log(`[register-service] ${addr} name="${name}" url=${endpointUrl}${logSuffix}`)
+      return json(res, 200, { ok: true, assetAddress: addr, name, endpointUrl })
+    } catch {
+      return json(res, 400, { error: 'Invalid JSON body' })
+    }
+  }
+
   // GET /api/health
   if (url.pathname === '/api/health') {
-    return json(res, 200, { ok: true, indexerUrl: INDEXER_URL, chainId: CHAIN_ID })
+    return json(res, 200, { ok: true, indexerUrl: INDEXER_URL, rpcUrl: RPC_URL, chainId: CHAIN_ID })
   }
 
   json(res, 404, { error: 'Not found' })
 })
 
 server.listen(PORT, () => {
-  const deployed = loadDeployedAssets()
+  const byAddress = buildAssetMetadataByAddress()
   console.log(`Mock API running at http://localhost:${PORT}`)
   console.log(`  GET /api/gated-urls?assetAddress=0x...&user=0x...`)
   console.log(`  GET /api/assets`)
+  console.log(`  POST /api/register-service`)
   console.log(`  GET /api/health`)
   console.log(``)
   console.log(`  Indexer:       ${INDEXER_URL}`)
+  console.log(`  RPC (fallback): ${RPC_URL}`)
   console.log(`  Chain ID:      ${CHAIN_ID}`)
   console.log(`  Subscriber ID: "${SUBSCRIBER_ID}"`)
-  console.log(`  Known assets:  ${deployed.size} (from deployments/registries_${CHAIN_ID}.json)`)
-  if (deployed.size > 0) {
-    for (const [addr, meta] of deployed) {
-      console.log(`    ${addr} (${meta.assetId})`)
+  console.log(`  Known assets:  ${byAddress.size} (deployments + services.json, keyed by asset address)`)
+  if (byAddress.size > 0) {
+    for (const [addr, meta] of byAddress) {
+      const label = meta.assetId ?? meta.assetIdHash ?? '—'
+      console.log(`    ${addr} (${label})`)
     }
   }
 })

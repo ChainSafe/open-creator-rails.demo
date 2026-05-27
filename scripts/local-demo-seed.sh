@@ -86,7 +86,7 @@ echo "AssetRegistry: $registry_address"
 echo ""
 echo "To index these locally from this repo (without changing submodules):"
 echo "  VITE_REGISTRY_ADDRESS=$registry_address PONDER_RPC_URL_31337=$RPC_URL \\"
-echo "    pnpm -s exec ponder dev --root \"$INDEXER_DIR\" --config ../ponder.anvil.config.ts"
+echo "    pnpm -C \"$INDEXER_DIR\" -s exec ponder dev --root . --config ../ponder.anvil.config.ts"
 
 echo "Minting test tokens to registry owner: $registry_owner"
 # mint 1,000,000 TEST with 6 decimals

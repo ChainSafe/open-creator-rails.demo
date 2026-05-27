@@ -18,15 +18,16 @@ The UI is intentionally simple.
 - Foundry (`anvil`, `cast`, `forge`)
 - `jq`
 
-### Quick start (one command)
+### Quick start
 
 ```bash
-pnpm install --no-frozen-lockfile
-pnpm -C open-creator-rails.indexer install
+pnpm install:all
 pnpm dev:local
 ```
 
-This single script starts Anvil, seeds contracts, starts the indexer, launches the mock API, and opens the Vite dev server. Press Ctrl+C to stop everything.
+`pnpm install:all` runs root `pnpm install` (workspace + SDK `postinstall` build) and then installs dependencies under `open-creator-rails.indexer`.
+
+`pnpm dev:local` starts Anvil, seeds contracts, starts the indexer, launches the mock API, and opens the Vite dev server. Press Ctrl+C to stop everything.
 
 When startup finishes, the terminal prints **two Anvil private keys** you can import into MetaMask (add network **Localhost 8545**, chain ID **31337**):
 
@@ -56,16 +57,14 @@ You will run **5 processes** in separate terminals:
 ### Step 1 — Install dependencies
 
 ```bash
-pnpm install --no-frozen-lockfile
+pnpm install:all
 ```
 
-This also builds the `@open-creator-rails/sdk` workspace package (via `postinstall`).
+This runs root `pnpm install` (see `pnpm-workspace.yaml`: the demo app and `open-creator-rails.sdk` are linked as a workspace; `postinstall` compiles the SDK to `dist/`) and then `pnpm install` in `open-creator-rails.indexer`.
 
-Install the indexer's dependencies:
+For a **production build** of the demo UI after that: `pnpm build`. For ABI sync in the indexer: `pnpm -C open-creator-rails.indexer run setup` (requires Foundry in that package’s `open-creator-rails` submodule).
 
-```bash
-pnpm -C open-creator-rails.indexer install
-```
+If you only need one side of the repo, you can run `pnpm install` at the root and/or `pnpm -C open-creator-rails.indexer install` separately.
 
 ---
 
@@ -117,9 +116,9 @@ The script writes all addresses into:
 ```bash
 export VITE_REGISTRY_ADDRESS=0x<REGISTRY_ADDRESS_FROM_STEP_3>
 export PONDER_RPC_URL_31337=http://127.0.0.1:8545
-INDEXER_ROOT="./open-creator-rails.indexer"
-pnpm -s exec ponder dev \
-  --root "$INDEXER_ROOT" \
+# Run from repo root: use indexer as the package root so hono and other indexer deps resolve.
+pnpm -C ./open-creator-rails.indexer -s exec ponder dev \
+  --root . \
   --config ../ponder.anvil.config.ts
 ```
 
@@ -133,6 +132,7 @@ curl -s http://localhost:42069/graphql \
 ```
 
 **Troubleshooting:**
+- If **`pnpm dev:local`** hangs on “Waiting for HTTP server”, tail the log: `tail -f open-creator-rails.indexer/.ponder/dev-local-ponder.log`. If you see **`Failed to load url hono`**, run **`pnpm install`** at the repo root (the demo declares `hono` / GraphQL packages so Ponder’s Vite can resolve them), then **`pnpm install:all`** again. If the log shows esbuild / native module errors, run **`pnpm approve-builds`**, then reinstall.
 - If Ponder prints `Port in use`, note the actual port and update `VITE_INDEXER_URL` in `.env.anvil`.
 - If you see `RuntimeError: Aborted()` from PGLite, delete the stale DB and restart:
   ```bash
@@ -154,14 +154,15 @@ This starts a Node server on `http://localhost:4100` that:
 2. Queries the Ponder indexer for an active subscription
 3. If subscribed → returns `{ "name", "url" }`; if not → `403`
 
-Names and URL paths for **seeded** demo assets come from `open-creator-rails.sdk/open-creator-rails/deployments/registries_<chainId>.json` (written by the seed script). There is no separate override file in this repo.
+Names and URL paths for **seeded** demo assets come from `open-creator-rails.sdk/open-creator-rails/deployments/registries_<chainId>.json` (written by the seed script). Routes created from **Creator Console** call `POST /api/register-service`, which writes **`mock-api/services.json`** (gitignored): each key is a **lowercase asset contract address**, each value is **`{ "name", "url" }`** for the gated API response.
 
 **Endpoints:**
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/gated-urls?assetAddress=...&user=...` | Returns `{ "name", "url" }` if subscribed, else `403` |
-| `GET /api/assets` | Lists assets known from the deployments file |
+| `GET /api/assets` | Lists merged metadata by asset address |
+| `POST /api/register-service` | Body: `assetAddress`, `name`, `endpointUrl` — optional `assetIdHash` is logged only |
 | `GET /api/health` | Health check |
 
 **Environment variables** (all optional):
@@ -170,6 +171,7 @@ Names and URL paths for **seeded** demo assets come from `open-creator-rails.sdk
 |----------|---------|-------------|
 | `MOCK_API_PORT` | `4100` | Server port |
 | `INDEXER_URL` | `http://localhost:42069/graphql` | Ponder GraphQL endpoint |
+| `RPC_URL` | `http://127.0.0.1:8545` | JSON-RPC for on-chain subscription check when the indexer lags |
 | `SUBSCRIBER_ID` | `demo` | Must match `DEMO_SUBSCRIBER_ID` in the frontend |
 | `CHAIN_ID` | `31337` | Chain id used to pick `registries_<CHAIN_ID>.json` |
 
@@ -263,7 +265,8 @@ Edit `.env.sepolia` for different Sepolia RPC/indexer/registry settings.
 
 ```
 ├── mock-api/
-│   └── server.mjs                   # Local mock API (gated demo URL)
+│   ├── server.mjs                   # Local mock API (gated demo URL)
+│   └── services.json                # Runtime: asset address → { name, url } (gitignored)
 ├── open-creator-rails.sdk/          # SDK submodule (contracts + TS client)
 ├── open-creator-rails.indexer/      # Ponder indexer submodule
 ├── scripts/

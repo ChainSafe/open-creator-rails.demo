@@ -35,7 +35,11 @@ function daysRemaining(endTimeSeconds: bigint | string): string {
 }
 
 /** Same rule as indexer `Subscription.isActive` (open-creator-rails.indexer `api/subscription/resolvers.ts`). */
-function subscriptionRowIsActive(s: { isRevoked: boolean; startTime: bigint; endTime: bigint }, now: bigint): boolean {
+function subscriptionRowIsActive(
+  s: { isRevoked: boolean; startTime?: bigint; endTime?: bigint },
+  now: bigint,
+): boolean {
+  if (s.startTime === undefined || s.endTime === undefined) return false
   return !s.isRevoked && s.startTime <= now && now < s.endTime
 }
 

@@ -91,22 +91,41 @@ echo ""
 
 # ─── 4. Start indexer ────────────────────────────────────────────────────────
 echo "[3/5] Starting Ponder indexer on port $INDEXER_PORT…"
-VITE_REGISTRY_ADDRESS="$REGISTRY_ADDRESS" \
-PONDER_RPC_URL_31337="$RPC_URL" \
-pnpm -s exec ponder dev \
-  --root "./open-creator-rails.indexer" \
-  --config ../ponder.anvil.config.ts &>/dev/null &
-PIDS+=($!)
+PONDER_LOG="$ROOT_DIR/open-creator-rails.indexer/.ponder/dev-local-ponder.log"
+mkdir -p "$(dirname "$PONDER_LOG")"
+: >"$PONDER_LOG"
+# Run Ponder with indexer cwd + root. Ponder's dev server uses Vite from the repo
+# root graph; `hono` / GraphQL deps are also declared at the demo root so resolution works.
+(
+  cd "$ROOT_DIR/open-creator-rails.indexer" || exit 1
+  export VITE_REGISTRY_ADDRESS="$REGISTRY_ADDRESS"
+  export PONDER_RPC_URL_31337="$RPC_URL"
+  pnpm exec ponder dev \
+    --root . \
+    --config ../ponder.anvil.config.ts \
+    --disable-ui
+) >>"$PONDER_LOG" 2>&1 &
+PONDER_PID=$!
+PIDS+=("$PONDER_PID")
 
-echo "       Waiting for indexer to be ready…"
-for i in $(seq 1 60); do
-  if curl -sf "http://localhost:$INDEXER_PORT/graphql" \
-    -H 'content-type: application/json' \
-    -d '{"query":"{ _meta { status } }"}' &>/dev/null; then
+echo "       Waiting for HTTP server (/health; first build can take 1–2 min)…"
+echo "       Ponder log: $PONDER_LOG"
+for i in $(seq 1 120); do
+  if ! kill -0 "$PONDER_PID" 2>/dev/null; then
+    echo "ERROR: Ponder exited before the server came up. Last log lines:"
+    tail -60 "$PONDER_LOG" 2>/dev/null || true
+    echo ""
+    echo "       Common fixes: run pnpm approve-builds (esbuild), then pnpm install again;"
+    echo "       or rm -rf ./open-creator-rails.indexer/.ponder and retry."
+    exit 1
+  fi
+  # Ponder serves /health as soon as the dev HTTP server is listening (before GraphQL backfill).
+  if curl -sf "http://127.0.0.1:$INDEXER_PORT/health" &>/dev/null; then
     break
   fi
-  if [ "$i" -eq 60 ]; then
-    echo "ERROR: Indexer did not start within 60s"
+  if [ "$i" -eq 120 ]; then
+    echo "ERROR: Indexer did not open port $INDEXER_PORT within 120s"
+    tail -60 "$PONDER_LOG" 2>/dev/null || true
     echo "       Try: rm -rf ./open-creator-rails.indexer/.ponder"
     exit 1
   fi
@@ -117,8 +136,14 @@ echo ""
 
 # ─── 5. Start mock API ───────────────────────────────────────────────────────
 echo "[4/5] Starting mock API on port $MOCK_API_PORT…"
+SERVICES_JSON="$ROOT_DIR/mock-api/services.json"
+if [ ! -f "$SERVICES_JSON" ] || [ ! -w "$SERVICES_JSON" ]; then
+  rm -f "$SERVICES_JSON" 2>/dev/null
+  echo '{}' > "$SERVICES_JSON"
+fi
 MOCK_API_PORT="$MOCK_API_PORT" \
 INDEXER_URL="http://localhost:$INDEXER_PORT/graphql" \
+RPC_URL="$RPC_URL" \
 node mock-api/server.mjs &>/dev/null &
 PIDS+=($!)
 

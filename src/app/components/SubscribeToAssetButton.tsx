@@ -166,6 +166,7 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['ocr', 'subscriptionStatus'] })
       await qc.invalidateQueries({ queryKey: ['indexer', 'listSubscriptionsByUser'] })
+      await qc.invalidateQueries({ queryKey: ['mockApi', 'gatedContent'] })
     },
     onError: (err) => {
       const message = err instanceof Error ? err.message : String(err)

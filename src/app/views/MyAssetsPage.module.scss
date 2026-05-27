@@ -91,55 +91,6 @@
   border-radius: 4px;
 }
 
-/* Post–modal deploy: subtle in-page progress */
-.deployProgressStrip {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--outline-variant);
-  background: var(--surface-container-low);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
-}
-
-.deployProgressSpinner {
-  flex-shrink: 0;
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  border: 2px solid var(--outline-variant);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: deployProgressSpin 0.75s linear infinite;
-}
-
-@keyframes deployProgressSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.deployProgressText {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.deployProgressTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--on-surface);
-}
-
-.deployProgressSubtitle {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--on-surface-variant);
-}
-
 /* Route Card */
 .routeList {
   display: flex;

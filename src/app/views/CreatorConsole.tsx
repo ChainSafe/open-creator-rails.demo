@@ -24,7 +24,10 @@ export function CreatorConsole() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [newApiName, setNewApiName] = useState('')
+  const [newApiUrl, setNewApiUrl] = useState('')
   const [newPricePerDay, setNewPricePerDay] = useState('')
+  /** Modal closes on deploy; strip stays until chain + indexer sync finishes */
+  const [deployFlowActive, setDeployFlowActive] = useState(false)
 
   const ownerQuery = useQuery({
     queryKey: ['ocr', 'registryOwner', appConfig.registryAddress],
@@ -126,6 +129,7 @@ export function CreatorConsole() {
     mutationFn: async () => {
       if (!sdk) throw new Error('SDK not ready')
       if (!newApiName.trim()) throw new Error('API name is required')
+      if (!newApiUrl.trim()) throw new Error('API URL is required')
 
       const tokenMeta = demoTokenMetaQuery.data
       if (!tokenMeta) throw new Error('Token metadata not loaded')
@@ -134,7 +138,7 @@ export function CreatorConsole() {
       const pricePerSecond = units / 86400n
       if (pricePerSecond <= 0n) throw new Error('Price per day is too low')
 
-      const assetId = keccak256(stringToHex(newApiName.trim()))
+      const assetIdHash = keccak256(stringToHex(newApiName.trim()))
 
       const tokenAddress = demoTokenAddressQuery.data
       if (!tokenAddress || !isAddress(tokenAddress, { strict: true })) {
@@ -147,7 +151,7 @@ export function CreatorConsole() {
       }
 
       const txHash = await sdk.AssetRegistry.createAsset({
-        assetId,
+        assetId: assetIdHash,
         subscriptionPrice: pricePerSecond,
         subscriptionDuration: 1n,
         tokenAddress,
@@ -158,7 +162,7 @@ export function CreatorConsole() {
       let assetAddress: string | null = null
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
-          const addr = await sdk.AssetRegistry.getAsset({ assetId })
+          const addr = await sdk.AssetRegistry.getAsset({ assetId: assetIdHash })
           if (addr && addr !== zeroAddr) {
             assetAddress = addr
             break
@@ -168,14 +172,41 @@ export function CreatorConsole() {
       }
       if (!assetAddress) throw new Error('Could not resolve asset address after creation')
 
+      const regResp = await fetch(`${appConfig.mockApiUrl}/api/register-service`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          assetAddress,
+          name: newApiName.trim(),
+          endpointUrl: newApiUrl.trim(),
+        }),
+      })
+      if (!regResp.ok) {
+        const err = await regResp.text()
+        throw new Error(`Mock API register-service failed: ${err}`)
+      }
+
       return txHash
+    },
+    onMutate: () => {
+      setModalOpen(false)
+      setDeployFlowActive(true)
+    },
+    onError: () => {
+      setDeployFlowActive(false)
+      setModalOpen(true)
     },
     onSuccess: async () => {
       setNewApiName('')
+      setNewApiUrl('')
       setNewPricePerDay('')
-      setModalOpen(false)
-      await new Promise((r) => setTimeout(r, 3000))
-      await qc.invalidateQueries({ queryKey: ['indexer', 'listAssetsByRegistry'] })
+      try {
+        await new Promise((r) => setTimeout(r, 3000))
+        await qc.invalidateQueries({ queryKey: ['indexer', 'listAssetsByRegistry'] })
+        await qc.invalidateQueries({ queryKey: ['mockApi'] })
+      } finally {
+        setDeployFlowActive(false)
+      }
     },
   })
 
@@ -213,6 +244,24 @@ export function CreatorConsole() {
           <span className={styles.routeCount}>{myAssets.length} Active Route{myAssets.length !== 1 ? 's' : ''}</span>
         )}
       </div>
+
+      {deployFlowActive && (
+        <div className={styles.deployProgressStrip} role="status" aria-live="polite">
+          <span className={styles.deployProgressSpinner} aria-hidden />
+          <div className={styles.deployProgressText}>
+            <span className={styles.deployProgressTitle}>
+              {createServiceMutation.isPending
+                ? 'Deploying route…'
+                : 'Syncing your new route…'}
+            </span>
+            <span className={styles.deployProgressSubtitle}>
+              {createServiceMutation.isPending
+                ? 'Confirm the transaction in your wallet. This can take a moment.'
+                : 'Waiting for the indexer; your route will appear below when ready.'}
+            </span>
+          </div>
+        </div>
+      )}
 
       {assetsQuery.isLoading ? (
         <p className={styles.emptyState}>Loading assets…</p>
@@ -259,10 +308,17 @@ export function CreatorConsole() {
                       spellCheck={false}
                       autoComplete="off"
                     />
-                    <p className={styles.pricingHint}>
-                      Hashed to the on-chain asset id. The mock API only maps friendly demo URLs for assets listed in
-                      the SDK deployments file (seeded routes); other routes get a generic placeholder URL.
-                    </p>
+                  </div>
+                  <div className={styles.formField}>
+                    <label className={styles.formFieldLabel}>API URL</label>
+                    <input
+                      className={styles.formInput}
+                      value={newApiUrl}
+                      onChange={(e) => setNewApiUrl(e.target.value)}
+                      placeholder="https://api.example.com/v1"
+                      spellCheck={false}
+                      autoComplete="off"
+                    />
                   </div>
                 </div>
 
@@ -288,9 +344,6 @@ export function CreatorConsole() {
                       />
                     </div>
                   </div>
-                  <p className={styles.pricingHint}>
-                    Subscribers choose how many days to buy; each day is charged at this rate.
-                  </p>
                 </div>
 
                 <div className={styles.modalActions}>
@@ -309,11 +362,6 @@ export function CreatorConsole() {
                 </div>
               </div>
 
-              {createServiceMutation.data && (
-                <div className={`${styles.modalFeedback} ${styles.modalFeedbackSuccess}`}>
-                  Route deployed! Tx: <code>{createServiceMutation.data}</code>
-                </div>
-              )}
               {createServiceMutation.error && (
                 <div className={`${styles.modalFeedback} ${styles.modalFeedbackError}`}>
                   {(createServiceMutation.error as Error).message}
