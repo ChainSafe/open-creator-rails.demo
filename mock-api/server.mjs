@@ -117,9 +117,10 @@ function registerApiByAssetAddress(assetAddress, name, url) {
  * from `services.json` (same address key).
  */
 function buildAssetMetadataByAddress() {
-  const deploymentsFile = join(
-    ROOT_DIR, 'open-creator-rails.sdk', 'open-creator-rails', 'deployments', `registries_${CHAIN_ID}.json`
-  )
+  const deploymentsDir = process.env.DEPLOYMENTS_DIR
+    ? process.env.DEPLOYMENTS_DIR
+    : join(ROOT_DIR, 'open-creator-rails.sdk', 'open-creator-rails', 'deployments')
+  const deploymentsFile = join(deploymentsDir, `registries_${CHAIN_ID}.json`)
   const byAddress = new Map()
 
   if (existsSync(deploymentsFile)) {
