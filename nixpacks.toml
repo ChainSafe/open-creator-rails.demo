@@ -2,7 +2,7 @@
 cmds = ["corepack enable", "pnpm install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm build"]
+cmds = ["pnpm exec vite build"]
 
 [start]
 cmd = "npx serve dist -s -l 3000"
