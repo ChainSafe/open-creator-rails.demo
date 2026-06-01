@@ -1,6 +1,3 @@
-[phases.setup]
-cmds = ["git submodule update --init --recursive"]
-
 [phases.install]
 cmds = ["corepack enable", "pnpm install --frozen-lockfile"]
 
