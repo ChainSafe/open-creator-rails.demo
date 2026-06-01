@@ -14,7 +14,7 @@
     "dev:anvil": "vite --mode anvil",
     "dev:sepolia": "vite --mode sepolia",
     "dev:mock-api": "node mock-api/server.mjs",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "build:anvil": "tsc -b && vite build --mode anvil",
     "build:sepolia": "tsc -b && vite build --mode sepolia",
     "lint": "eslint .",
