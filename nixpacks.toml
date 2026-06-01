@@ -1,5 +1,5 @@
 [phases.install]
-cmds = ["corepack enable", "pnpm install --frozen-lockfile"]
+cmds = ["corepack enable", "pnpm install --no-frozen-lockfile"]
 
 [phases.build]
 cmds = ["pnpm exec vite build"]
