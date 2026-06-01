@@ -73,6 +73,8 @@ DEMO_ASSET_OWNER_ADDRESS="$(pick_seed_var SEED_DEMO_ASSET_OWNER_ADDRESS)"
 DEMO_ASSET_OWNER_PRIVATE_KEY="$(pick_seed_var SEED_DEMO_ASSET_OWNER_PRIVATE_KEY)"
 DEMO_USER_ADDRESS="$(pick_seed_var SEED_DEMO_USER_ADDRESS)"
 DEMO_USER_PRIVATE_KEY="$(pick_seed_var SEED_DEMO_USER_PRIVATE_KEY)"
+DEMO_TRANSFER_OWNER_ADDRESS="$(pick_seed_var SEED_DEMO_TRANSFER_OWNER_ADDRESS)"
+DEMO_TRANSFER_OWNER_PRIVATE_KEY="$(pick_seed_var SEED_DEMO_TRANSFER_OWNER_PRIVATE_KEY)"
 
 echo "       Registry: $REGISTRY_ADDRESS"
 echo "       Seed complete ✓"
@@ -85,6 +87,7 @@ VITE_RPC_URL=$RPC_URL
 VITE_INDEXER_URL=http://localhost:$INDEXER_PORT/graphql
 VITE_REGISTRY_ADDRESS=$REGISTRY_ADDRESS
 VITE_MOCK_API_URL=http://localhost:$MOCK_API_PORT
+VITE_DEMO_TRANSFER_OWNER_ADDRESS=$DEMO_TRANSFER_OWNER_ADDRESS
 EOF
 echo "       .env.anvil written ✓"
 echo ""
@@ -180,6 +183,10 @@ if [ -n "$DEMO_ASSET_OWNER_PRIVATE_KEY" ] && [ -n "$DEMO_USER_PRIVATE_KEY" ]; th
   echo "  Regular user (TEST minted for subscriptions):"
   echo "    Private key: $DEMO_USER_PRIVATE_KEY"
   echo "    Address:     $DEMO_USER_ADDRESS"
+  echo ""
+  echo "  Transfer owner demo (Add Creator asset owner / transfer target):"
+  echo "    Private key: $DEMO_TRANSFER_OWNER_PRIVATE_KEY"
+  echo "    Address:     $DEMO_TRANSFER_OWNER_ADDRESS"
   echo ""
   echo "───────────────────────────────────────────────────────"
 else

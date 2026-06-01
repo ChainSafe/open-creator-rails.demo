@@ -2,99 +2,52 @@
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
 }
 
 .pageHeader {
-  border-bottom: 1px solid var(--outline-variant);
-  padding-bottom: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 48px;
+}
+
+.pageTitle {
+  font-family: var(--heading);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 56px;
+  letter-spacing: -0.02em;
+  color: var(--on-background);
+  margin: 0 0 16px;
 }
 
 .pageSubtitle {
+  font-family: var(--body);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  color: var(--on-surface-variant);
+  margin: 0;
+  max-width: 42rem;
+}
+
+.status {
+  font-family: var(--body);
   font-size: 16px;
   line-height: 24px;
   color: var(--on-surface-variant);
-  margin-top: 8px;
+  margin: 0 0 24px;
 }
 
-.assetList {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  width: 100%;
+.grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 16px;
+  gap: 24px;
 
   @media (min-width: 768px) {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (min-width: 1200px) {
-    grid-template-columns: 1fr 1fr 1fr;
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(3, 1fr);
   }
-}
-
-.assetCard {
-  position: relative;
-  background: var(--surface-container-low);
-  border: 1px solid var(--outline-variant);
-  border-radius: 8px;
-  padding: 24px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: border-color 0.2s;
-  cursor: pointer;
-
-  &:hover {
-    border-color: var(--primary);
-
-    .assetCardName {
-      color: var(--primary);
-    }
-  }
-}
-
-.assetCardAccent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--primary);
-}
-
-.assetCardMain {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  color: var(--on-surface);
-  flex: 1;
-}
-
-.assetCardName {
-  font-family: var(--heading);
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 24px;
-  color: var(--on-surface);
-  transition: color 0.2s;
-}
-
-.assetCardId {
-  font-family: var(--mono);
-  font-size: 12px;
-  color: var(--on-surface-variant);
-  opacity: 0.7;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.assetCardSubscribe {
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid var(--outline-variant);
 }

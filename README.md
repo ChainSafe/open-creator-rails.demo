@@ -29,14 +29,15 @@ pnpm dev:local
 
 `pnpm dev:local` starts Anvil, seeds contracts, starts the indexer, launches the mock API, and opens the Vite dev server. Press Ctrl+C to stop everything.
 
-When startup finishes, the terminal prints **two Anvil private keys** you can import into MetaMask (add network **Localhost 8545**, chain ID **31337**):
+When startup finishes, the terminal prints **three Anvil private keys** you can import into MetaMask (add network **Localhost 8545**, chain ID **31337**):
 
 | Role | Address | Private key |
 |------|---------|-------------|
 | **Asset owner** — deploys contracts, owns the three demo assets, receives minted TEST | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d` |
-| **Regular user** — same TEST mint as the owner (for subscribing as a non-owner) | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | `0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a` |
+| **Regular user** — TEST minted for subscribing as a non-owner | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | `0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a` |
+| **Transfer owner demo** — TEST minted; use as Add Creator asset owner or transfer-ownership target | `0x90F79bf6EB2c4f870365E785982E1f101E93b906` | `0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6` |
 
-Both keys are well-known Anvil defaults; use them **only on local Anvil**, never on a public network. The seed script also prints these keys right after minting.
+These are well-known Anvil defaults; use them **only on local Anvil**, never on a public network. The seed script also prints them after minting. **Fill for demo purposes** in Admin Console pre-fills the transfer-owner address when running via `pnpm dev:local`.
 
 If you prefer to run each service manually (e.g. for debugging), follow the step-by-step instructions below.
 

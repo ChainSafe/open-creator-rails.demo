@@ -1,9 +1,10 @@
 import { resolveOpenCreatorRailsIndexerGraphqlUrl } from '@open-creator-rails/sdk'
-import { useMemo } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { isHex, type Address } from 'viem'
 
+import { blockExplorerAddressUrl } from '../blockExplorer'
 import { appConfig } from '../config'
 import styles from './AssetHistoryPage.module.scss'
 
@@ -58,11 +59,33 @@ async function indexerQuery<T>(url: string, query: string, variables: Record<str
   return json.data
 }
 
-function fmtTs(ts: bigint | undefined) {
+function fmtTs(ts: bigint | undefined): string {
   if (!ts) return '—'
   const ms = Number(ts) * 1000
   if (!Number.isFinite(ms)) return ts.toString()
-  return new Date(ms).toISOString()
+  return new Date(ms).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
+
+function shortenAddress(address: string): string {
+  return `${address.slice(0, 6)}…${address.slice(-4)}`
+}
+
+function AddressValue({ address }: { address: string }) {
+  const explorer = blockExplorerAddressUrl(address)
+  if (explorer) {
+    return (
+      <a href={explorer} target="_blank" rel="noreferrer noopener" className={styles.detailLink}>
+        {shortenAddress(address)}
+        <span className="material-symbols-outlined" style={{ fontSize: 14, verticalAlign: 'middle' }}>
+          open_in_new
+        </span>
+      </a>
+    )
+  }
+  return <span className={styles.detailValue}>{address}</span>
 }
 
 export function AssetHistoryPage() {
@@ -77,9 +100,6 @@ export function AssetHistoryPage() {
     return v as `0x${string}`
   }, [params.assetId])
 
-  // Uses v2 GraphQL (`resolveOpenCreatorRailsIndexerGraphqlUrl` → `/v2/graphql`), which exposes
-  // `assets`, not Ponder-native `assetEntitys`. `AssetEntity.id` is `chainId_address` — subscription
-  // history filters need the contract `address` field.
   const assetEntityQuery = useQuery({
     queryKey: ['indexer', 'assetByRegistryAssetId', graphqlUrl, assetId],
     queryFn: async () => {
@@ -108,6 +128,18 @@ export function AssetHistoryPage() {
   })
 
   const assetAddress = (assetEntityQuery.data?.address ?? null) as Address | null
+
+  const serviceNameQuery = useQuery({
+    queryKey: ['mockApi', 'assetName', assetAddress],
+    queryFn: async () => {
+      if (!assetAddress) return null
+      const resp = await fetch(`${appConfig.mockApiUrl}/api/asset-name?assetAddress=${assetAddress}`)
+      if (!resp.ok) return null
+      const data = await resp.json()
+      return data.name as string
+    },
+    enabled: Boolean(assetAddress),
+  })
 
   const createdQuery = useQuery<AssetCreatedEvent[]>({
     queryKey: ['indexer', 'assetRegistry_AssetCreateds', graphqlUrl, assetId],
@@ -192,7 +224,6 @@ export function AssetHistoryPage() {
         payer: e.payer as Address,
         startTime: BigInt(e.startTime),
         endTime: BigInt(e.endTime),
-        // SubscriptionAdded on-chain is always nonce 0; history row has no nonce column in v2 DB.
         nonce: 0n,
         blockTimestamp: BigInt(e.blockTimestamp),
       }))
@@ -271,135 +302,224 @@ export function AssetHistoryPage() {
     enabled: Boolean(appConfig.indexerUrl && assetAddress),
   })
 
+  const creatorName = serviceNameQuery.data ?? 'Creator'
+  const contractExplorer = assetAddress ? blockExplorerAddressUrl(assetAddress) : null
+
+  if (assetId === null && params.assetId) {
+    return (
+      <div className={styles.page}>
+        <p className={`${styles.status} ${styles.statusError}`}>Invalid asset id (must be 0x…)</p>
+        <Link to="/" className={styles.backLink}>
+          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+            arrow_back
+          </span>
+          Back to Creators Hub
+        </Link>
+      </div>
+    )
+  }
+
   return (
-    <div>
-      <h1>Asset history</h1>
-      <p>
-        Asset ID hash: <code>{params.assetId ?? '(missing)'}</code>
-      </p>
-      <p>
-        Indexer: <code>{appConfig.indexerUrl}</code>
-      </p>
+    <div className={styles.page}>
+      <Link to={assetId ? `/assets/${assetId}` : '/'} className={styles.backLink}>
+        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+          arrow_back
+        </span>
+        Back to creator
+      </Link>
 
-      <p>
-        <Link to={assetId ? `/assets/${assetId}` : '/registry'}>← Back to asset</Link>
-      </p>
-
-      <p>
-        Asset address:{' '}
-        <code>
-          {!appConfig.indexerUrl
-            ? 'Set VITE_INDEXER_URL'
-            : assetId === null
-              ? 'Invalid asset id (must be 0x…)'
-              : assetEntityQuery.isLoading
-                ? 'Loading…'
-                : assetEntityQuery.error
-                  ? `Error: ${(assetEntityQuery.error as Error).message}`
-                  : assetEntityQuery.data?.address ?? '(not indexed yet)'}
-        </code>
-      </p>
-
-      <hr className={styles.sectionDivider} />
-
-      <h2>Creation / provenance</h2>
-      {createdQuery.isLoading ? <p>Loading…</p> : null}
-      {createdQuery.error ? (
-        <p>
-          Error: <code>{(createdQuery.error as Error).message}</code>
+      <header className={styles.header}>
+        <h1 className={styles.title}>{creatorName} — On-chain history</h1>
+        <p className={styles.subtitle}>
+          Indexed events for this creator asset: deployment, subscriptions, price updates, and ownership changes.
         </p>
-      ) : null}
-      <ul>
+      </header>
+
+      <div className={styles.metaPanel}>
+        <div className={styles.metaRow}>
+          <span className={styles.metaLabel}>Contract</span>
+          {!appConfig.indexerUrl ? (
+            <span className={styles.metaValue}>Set VITE_INDEXER_URL</span>
+          ) : assetEntityQuery.isLoading ? (
+            <span className={styles.metaValue}>Loading…</span>
+          ) : assetEntityQuery.error ? (
+            <span className={`${styles.metaValue} ${styles.statusError}`}>
+              {(assetEntityQuery.error as Error).message}
+            </span>
+          ) : assetAddress && contractExplorer ? (
+            <a
+              href={contractExplorer}
+              target="_blank"
+              rel="noreferrer noopener"
+              className={styles.metaLink}
+            >
+              {assetAddress}
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                open_in_new
+              </span>
+            </a>
+          ) : (
+            <span className={styles.metaValue}>{assetAddress ?? '(not indexed yet)'}</span>
+          )}
+        </div>
+        {assetId ? (
+          <div className={styles.metaRow}>
+            <span className={styles.metaLabel}>Registry asset ID</span>
+            <span className={styles.metaValue}>{assetId}</span>
+          </div>
+        ) : null}
+      </div>
+
+      <HistorySection
+        title="Creation"
+        icon="rocket_launch"
+        hint="When this creator was registered on the asset registry."
+        isLoading={createdQuery.isLoading}
+        error={createdQuery.error}
+        isEmpty={(createdQuery.data ?? []).length === 0}
+        emptyMessage="No creation events indexed yet."
+      >
         {(createdQuery.data ?? []).map((e) => (
-          <li key={e.id}>
-            <div>
-              <strong>AssetCreated</strong> at <code>{fmtTs(e.blockTimestamp)}</code> (block{' '}
-              <code>{e.blockNumber.toString()}</code>)
+          <li key={e.id} className={styles.eventCard}>
+            <div className={styles.eventHeader}>
+              <span className={styles.eventType}>Asset created</span>
+              <time className={styles.eventTime} dateTime={new Date(Number(e.blockTimestamp) * 1000).toISOString()}>
+                {fmtTs(e.blockTimestamp)}
+              </time>
             </div>
-            <div>
-              asset: <code>{e.asset}</code>
-            </div>
-            <div>
-              owner: <code>{e.owner}</code>
-            </div>
-            <div>
-              token: <code>{e.tokenAddress}</code>
-            </div>
-            <div>
-              price (per second): <code>{e.subscriptionPrice.toString()}</code>
+            <div className={styles.eventDetails}>
+              <DetailRow label="Block" value={e.blockNumber.toString()} />
+              <DetailRow label="Asset" address={e.asset} />
+              <DetailRow label="Owner" address={e.owner} />
+              <DetailRow label="Payment token" address={e.tokenAddress} />
+              <DetailRow label="Price (per second)" value={e.subscriptionPrice.toString()} />
             </div>
           </li>
         ))}
-      </ul>
+      </HistorySection>
 
-      <h2>Subscription history</h2>
-      {!assetAddress ? <p>Waiting for asset address (indexer)…</p> : null}
-      {subsAddedQuery.isLoading ? <p>Loading…</p> : null}
-      {subsAddedQuery.error ? (
-        <p>
-          Error: <code>{(subsAddedQuery.error as Error).message}</code>
-        </p>
-      ) : null}
-      <ul>
+      <HistorySection
+        title="Subscriptions"
+        icon="group"
+        hint="On-chain SubscriptionAdded events (initial purchases)."
+        isLoading={Boolean(assetAddress && subsAddedQuery.isLoading)}
+        error={subsAddedQuery.error}
+        isEmpty={Boolean(assetAddress && (subsAddedQuery.data ?? []).length === 0)}
+        emptyMessage="No subscription events yet."
+        waitingMessage={!assetAddress ? 'Waiting for asset address from indexer…' : undefined}
+      >
         {(subsAddedQuery.data ?? []).map((e) => (
-          <li key={e.id}>
-            <div>
-              <strong>SubscriptionAdded</strong> at <code>{fmtTs(e.blockTimestamp)}</code>
+          <li key={e.id} className={styles.eventCard}>
+            <div className={styles.eventHeader}>
+              <span className={styles.eventType}>Subscription added</span>
+              <time className={styles.eventTime} dateTime={new Date(Number(e.blockTimestamp) * 1000).toISOString()}>
+                {fmtTs(e.blockTimestamp)}
+              </time>
             </div>
-            <div>
-              subscriberId: <code>{e.subscriber}</code>
-            </div>
-            <div>
-              payer: <code>{e.payer}</code>
-            </div>
-            <div>
-              start: <code>{e.startTime.toString()}</code> end: <code>{e.endTime.toString()}</code> nonce:{' '}
-              <code>{e.nonce.toString()}</code>
+            <div className={styles.eventDetails}>
+              <DetailRow label="Subscriber ID" value={e.subscriber} />
+              <DetailRow label="Payer" address={e.payer} />
+              <DetailRow label="Start" value={fmtTs(e.startTime)} />
+              <DetailRow label="End" value={fmtTs(e.endTime)} />
             </div>
           </li>
         ))}
-      </ul>
+      </HistorySection>
 
-      <h2>Price changes</h2>
-      {priceUpdatedQuery.isLoading ? <p>Loading…</p> : null}
-      {priceUpdatedQuery.error ? (
-        <p>
-          Error: <code>{(priceUpdatedQuery.error as Error).message}</code>
-        </p>
-      ) : null}
-      <ul>
+      <HistorySection
+        title="Price changes"
+        icon="payments"
+        hint="Updates from the asset owner via setSubscriptionPrice."
+        isLoading={Boolean(assetAddress && priceUpdatedQuery.isLoading)}
+        error={priceUpdatedQuery.error}
+        isEmpty={Boolean(assetAddress && (priceUpdatedQuery.data ?? []).length === 0)}
+        emptyMessage="No price updates recorded."
+        waitingMessage={!assetAddress ? 'Waiting for asset address from indexer…' : undefined}
+      >
         {(priceUpdatedQuery.data ?? []).map((e) => (
-          <li key={e.id}>
-            <div>
-              <strong>SubscriptionPriceUpdated</strong> at <code>{fmtTs(e.blockTimestamp)}</code>
+          <li key={e.id} className={styles.eventCard}>
+            <div className={styles.eventHeader}>
+              <span className={styles.eventType}>Price updated</span>
+              <time className={styles.eventTime} dateTime={new Date(Number(e.blockTimestamp) * 1000).toISOString()}>
+                {fmtTs(e.blockTimestamp)}
+              </time>
             </div>
-            <div>
-              new price (per second): <code>{e.newSubscriptionPrice.toString()}</code>
+            <div className={styles.eventDetails}>
+              <DetailRow label="New price (per second)" value={e.newSubscriptionPrice.toString()} />
             </div>
           </li>
         ))}
-      </ul>
+      </HistorySection>
 
-      <h2>Ownership transfers</h2>
-      {ownershipQuery.isLoading ? <p>Loading…</p> : null}
-      {ownershipQuery.error ? (
-        <p>
-          Error: <code>{(ownershipQuery.error as Error).message}</code>
-        </p>
-      ) : null}
-      <ul>
+      <HistorySection
+        title="Ownership"
+        icon="swap_horiz"
+        hint="Asset contract ownership transfers."
+        isLoading={Boolean(assetAddress && ownershipQuery.isLoading)}
+        error={ownershipQuery.error}
+        isEmpty={Boolean(assetAddress && (ownershipQuery.data ?? []).length === 0)}
+        emptyMessage="No ownership transfers."
+        waitingMessage={!assetAddress ? 'Waiting for asset address from indexer…' : undefined}
+      >
         {(ownershipQuery.data ?? []).map((e) => (
-          <li key={e.id}>
-            <div>
-              <strong>OwnershipTransferred</strong> at <code>{fmtTs(e.blockTimestamp)}</code>
+          <li key={e.id} className={styles.eventCard}>
+            <div className={styles.eventHeader}>
+              <span className={styles.eventType}>Ownership transferred</span>
+              <time className={styles.eventTime} dateTime={new Date(Number(e.blockTimestamp) * 1000).toISOString()}>
+                {fmtTs(e.blockTimestamp)}
+              </time>
             </div>
-            <div>
-              from <code>{e.previousOwner}</code> to <code>{e.newOwner}</code>
+            <div className={styles.eventDetails}>
+              <DetailRow label="From" address={e.previousOwner} />
+              <DetailRow label="To" address={e.newOwner} />
             </div>
           </li>
         ))}
-      </ul>
+      </HistorySection>
     </div>
   )
 }
 
+function HistorySection(props: {
+  title: string
+  icon: string
+  hint: string
+  isLoading: boolean
+  error: unknown
+  isEmpty: boolean
+  emptyMessage: string
+  waitingMessage?: string
+  children: ReactNode
+}) {
+  const { title, icon, hint, isLoading, error, isEmpty, emptyMessage, waitingMessage, children } = props
+  const ready = !isLoading && !error && !waitingMessage
+
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.sectionTitle}>
+        <span className={`material-symbols-outlined ${styles.sectionIcon}`}>{icon}</span>
+        {title}
+      </h2>
+      <p className={styles.sectionHint}>{hint}</p>
+      {waitingMessage ? <p className={styles.status}>{waitingMessage}</p> : null}
+      {isLoading ? <p className={styles.status}>Loading…</p> : null}
+      {error ? (
+        <p className={`${styles.status} ${styles.statusError}`}>
+          {(error as Error).message}
+        </p>
+      ) : null}
+      {ready && isEmpty ? <p className={styles.emptySection}>{emptyMessage}</p> : null}
+      {ready && !isEmpty ? <ul className={styles.eventList}>{children}</ul> : null}
+    </section>
+  )
+}
+
+function DetailRow(props: { label: string; value?: string; address?: string }) {
+  const { label, value, address } = props
+  return (
+    <div className={styles.detailRow}>
+      <span className={styles.detailLabel}>{label}</span>
+      {address ? <AddressValue address={address} /> : <span className={styles.detailValue}>{value}</span>}
+    </div>
+  )
+}

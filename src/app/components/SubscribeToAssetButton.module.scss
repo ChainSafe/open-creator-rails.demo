@@ -45,3 +45,165 @@
   font-size: 13px;
   color: var(--success);
 }
+
+.unlockPanel {
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px 32px;
+  text-align: center;
+  background: rgba(10, 29, 47, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid #1e293b;
+  box-shadow: inset 0 0 15px rgba(173, 198, 255, 0.1);
+  border-radius: 4px;
+}
+
+.unlockIconWrap {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 24px;
+  border-radius: 9999px;
+  background: var(--primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-primary-container);
+
+  .material-symbols-outlined {
+    font-size: 32px;
+  }
+}
+
+.unlockTitle {
+  font-family: var(--heading);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 40px;
+  color: var(--on-background);
+  margin: 0 0 16px;
+}
+
+.unlockSubtitle {
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--on-surface-variant);
+  margin: 0 0 32px;
+}
+
+.priceTier {
+  text-align: left;
+  background: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  padding: 24px;
+  margin-bottom: 24px;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: var(--primary);
+  }
+}
+
+.tierLabel {
+  display: block;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+.tierPriceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tierPriceAmount {
+  font-family: var(--heading);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 40px;
+  color: var(--on-surface);
+}
+
+.tierPriceUnit {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+}
+
+.tierDaysRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--outline-variant);
+}
+
+.tierDaysLabel {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--outline);
+}
+
+.tierDaysInput {
+  width: 72px;
+}
+
+.tierTotal {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--outline);
+  margin-left: auto;
+
+  strong {
+    color: var(--secondary);
+    font-weight: 600;
+  }
+}
+
+.unlockCta {
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+.unlockHint {
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  margin: 0 0 16px;
+}
+

@@ -27,4 +27,10 @@ export const appConfig = {
     trimEnv(import.meta.env.VITE_INDEXER_URL) ??
     (chainKey === 'sepolia' ? 'https://indexer-api-production-c33d.up.railway.app/' : 'http://localhost:42069/graphql'),
   mockApiUrl: trimEnv(import.meta.env.VITE_MOCK_API_URL) ?? 'http://localhost:4100',
+  /** Optional: Google Sheet CSV export URL for creator metadata (dev/demo). */
+  demoServicesSheetUrl: trimEnv(import.meta.env.VITE_DEMO_SERVICES_SHEET_URL),
+  /** Local dev: Anvil account #3 — pre-filled as Add Creator asset owner (transfer demo). */
+  demoTransferOwnerAddress: trimEnv(import.meta.env.VITE_DEMO_TRANSFER_OWNER_ADDRESS) as
+    | `0x${string}`
+    | undefined,
 } as const
