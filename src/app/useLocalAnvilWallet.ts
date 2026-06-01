@@ -3,7 +3,7 @@ import { useAccount, useChainId, useConnect, useWalletClient } from 'wagmi'
 
 import { appConfig } from './config'
 import { ensureLocalAnvilChain, isWalletUserRejection } from './ensureLocalAnvilChain'
-import { useToast } from './toast/ToastContext'
+import { useToast } from './toast/useToast'
 
 /** True when the app is built for local Anvil (`VITE_CHAIN=anvil`, e.g. `pnpm dev:local`). */
 export const isLocalAnvilDev = appConfig.chainKey === 'anvil'

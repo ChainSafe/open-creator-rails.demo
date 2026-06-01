@@ -29,6 +29,9 @@ PRIVATE_KEY="${PRIVATE_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412
 # Anvil private key #2 — separate “regular user” for MetaMask (subscriptions only).
 USER_DEMO_PRIVATE_KEY="${USER_DEMO_PRIVATE_KEY:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
 
+# Anvil private key #3 — demo “new asset owner” (transfer ownership / Add Creator owner field).
+TRANSFER_OWNER_DEMO_PRIVATE_KEY="${TRANSFER_OWNER_DEMO_PRIVATE_KEY:-0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6}"
+
 export RPC_URL PRIVATE_KEY
 
 echo "Seeding local OCR demo…"
@@ -44,6 +47,7 @@ forge build
 
 registry_owner="$(cast wallet address --private-key "$PRIVATE_KEY")"
 user_demo_addr="$(cast wallet address --private-key "$USER_DEMO_PRIVATE_KEY")"
+transfer_owner_demo_addr="$(cast wallet address --private-key "$TRANSFER_OWNER_DEMO_PRIVATE_KEY")"
 
 echo "Deploying TestToken (direct forge, without modifying submodule)…"
 test_token_json="$(forge create --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" src/TestToken.sol:TestToken --broadcast --json)"
@@ -95,6 +99,9 @@ cast send "$token_address" "mint(address,uint256)" "$registry_owner" 10000000000
 echo "Minting test tokens to demo user: $user_demo_addr"
 cast send "$token_address" "mint(address,uint256)" "$user_demo_addr" 1000000000000 --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" >/dev/null
 
+echo "Minting test tokens to transfer-owner demo account: $transfer_owner_demo_addr"
+cast send "$token_address" "mint(address,uint256)" "$transfer_owner_demo_addr" 1000000000000 --rpc-url "$RPC_URL" --private-key "$PRIVATE_KEY" >/dev/null
+
 echo "Creating demo assets…"
 create_asset() {
   local human_id="$1"
@@ -134,6 +141,10 @@ echo ""
 echo "Regular user (TEST minted for subscribing / marketplace flows):"
 echo "  Address:     $user_demo_addr"
 echo "  Private key: $USER_DEMO_PRIVATE_KEY"
+echo ""
+echo "Transfer owner demo (TEST minted; use as Add Creator asset owner / transfer target):"
+echo "  Address:     $transfer_owner_demo_addr"
+echo "  Private key: $TRANSFER_OWNER_DEMO_PRIVATE_KEY"
 echo "───────────────────────────────────────────────────────────────────"
 echo ""
 # Machine-readable lines for scripts (e.g. dev-local.sh) — grep-friendly.
@@ -141,6 +152,8 @@ echo "SEED_DEMO_ASSET_OWNER_ADDRESS=$registry_owner"
 echo "SEED_DEMO_ASSET_OWNER_PRIVATE_KEY=$PRIVATE_KEY"
 echo "SEED_DEMO_USER_ADDRESS=$user_demo_addr"
 echo "SEED_DEMO_USER_PRIVATE_KEY=$USER_DEMO_PRIVATE_KEY"
+echo "SEED_DEMO_TRANSFER_OWNER_ADDRESS=$transfer_owner_demo_addr"
+echo "SEED_DEMO_TRANSFER_OWNER_PRIVATE_KEY=$TRANSFER_OWNER_DEMO_PRIVATE_KEY"
 echo ""
 echo "Done. Start indexer in another terminal with:"
 echo "  (cd \"$INDEXER_DIR\" && pnpm dev)"

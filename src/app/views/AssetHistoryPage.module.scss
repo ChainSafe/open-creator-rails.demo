@@ -1,5 +1,251 @@
-.sectionDivider {
-  margin: 16px 0;
-  border: none;
-  border-top: 1px solid var(--border);
+.page {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 32px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-family: var(--heading);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 48px;
+  letter-spacing: -0.02em;
+  color: var(--on-surface);
+  margin: 0 0 12px;
+
+  @media (min-width: 768px) {
+    font-size: 48px;
+    line-height: 56px;
+  }
+}
+
+.subtitle {
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--on-surface-variant);
+  margin: 0;
+  max-width: 42rem;
+}
+
+.metaPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 48px;
+  padding: 20px 24px;
+  background: rgba(10, 29, 47, 0.7);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  border-left: 4px solid var(--secondary);
+  border-radius: 4px;
+}
+
+.metaRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 16px;
+  }
+}
+
+.metaLabel {
+  flex-shrink: 0;
+  min-width: 120px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+
+.metaValue {
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--on-surface);
+  word-break: break-all;
+}
+
+.metaLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary);
+  text-decoration: none;
+  word-break: break-all;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.section {
+  margin-bottom: 48px;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-family: var(--heading);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.sectionIcon {
+  font-size: 22px;
+  color: var(--primary);
+}
+
+.sectionHint {
+  margin: 0 0 20px;
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--on-surface-variant);
+}
+
+.status {
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--on-surface-variant);
+  margin: 0 0 16px;
+}
+
+.statusError {
+  color: var(--error);
+}
+
+.eventList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventCard {
+  padding: 20px 24px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 4px;
+  background: var(--surface-container-low);
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: rgba(176, 198, 255, 0.35);
+  }
+}
+
+.eventHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.eventType {
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--on-surface);
+}
+
+.eventTime {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--outline);
+}
+
+.eventDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 12px;
+  }
+}
+
+.detailLabel {
+  flex-shrink: 0;
+  min-width: 100px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--on-surface-variant);
+}
+
+.detailValue {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--on-surface);
+  word-break: break-all;
+}
+
+.detailLink {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--primary);
+  text-decoration: none;
+  word-break: break-all;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.emptySection {
+  padding: 24px;
+  text-align: center;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--on-surface-variant);
+  border: 1px dashed var(--outline-variant);
+  border-radius: 4px;
 }

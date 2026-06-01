@@ -1,11 +1,11 @@
 /**
- * Mock API for local development: subscription-gated “content URL” responses.
+ * Mock API for local development: subscription-gated creator content responses.
  *
- * Checks subscription status via the Ponder indexer, then returns a demo URL
- * only for active subscribers. Asset names and URL paths come from the SDK
- * deployments file written by `local-demo-seed.sh` (`registries_<chainId>.json`),
- * plus optional `services.json`: **asset contract address (lowercase) → { name, url }**
- *   written by `POST /api/register-service` (Creator Console).
+ * Checks subscription status via the Ponder indexer, then returns creator content
+ * only for active subscribers. Base creator labels come from the SDK deployments
+ * file written by `local-demo-seed.sh` (`registries_<chainId>.json`), plus optional
+ * `services.json`: **asset contract address (lowercase) → creator profile**
+ *   written by `POST /api/register-service` (Admin Console).
  *
  * Usage:
  *   node mock-api/server.mjs
@@ -47,14 +47,14 @@ const ASSET_IS_SUBSCRIPTION_ACTIVE_ABI = [
 // Demo labels for seeded assets (matches `assetId` in deployments JSON)
 // ---------------------------------------------------------------------------
 
-const DEFAULT_SERVICE_NAMES = {
-  demo_asset_1: 'WeatherPro API',
-  demo_asset_2: 'SentimentIQ Analytics',
-  demo_asset_3: 'GeoRoute Navigator',
+const DEFAULT_CREATOR_NAMES = {
+  demo_asset_1: 'Alice Creator',
+  demo_asset_2: 'Bob Builder',
+  demo_asset_3: 'Cathy Coder',
 }
 
-function getServiceName(assetId) {
-  return DEFAULT_SERVICE_NAMES[assetId] ?? `Service ${assetId}`
+function getCreatorName(assetId) {
+  return DEFAULT_CREATOR_NAMES[assetId] ?? `Creator ${assetId}`
 }
 
 // ---------------------------------------------------------------------------
@@ -65,17 +65,45 @@ const SERVICES_FILE = join(__dirname, 'services.json')
 
 let _servicesByAssetAddress = {}
 
-/** Normalize persisted map: keys = lowercase asset address, values = { name, url } only. */
+/**
+ * Normalize persisted map: keys = lowercase asset address.
+ * Public: name, avatarUrl. Gated: contentImageUrl, videoUrl, article.
+ * Accepts legacy youtubeUrl / imageUrl keys from older demos.
+ */
+function normalizeCreatorEntry(v) {
+  if (!v || typeof v !== 'object' || typeof v.name !== 'string') return null
+  const avatarUrl =
+    typeof v.avatarUrl === 'string'
+      ? v.avatarUrl
+      : typeof v.imageUrl === 'string'
+        ? v.imageUrl
+        : undefined
+  const contentImageUrl =
+    typeof v.contentImageUrl === 'string' ? v.contentImageUrl : undefined
+  const videoUrl =
+    typeof v.videoUrl === 'string'
+      ? v.videoUrl
+      : typeof v.youtubeUrl === 'string'
+        ? v.youtubeUrl
+        : undefined
+  const article = typeof v.article === 'string' ? v.article : undefined
+  return {
+    name: v.name,
+    avatarUrl,
+    contentImageUrl,
+    videoUrl,
+    article,
+  }
+}
+
 function normalizeServicesFileShape(raw) {
   const out = {}
   if (!raw || typeof raw !== 'object') return out
   for (const [addr, v] of Object.entries(raw)) {
     if (!addr.startsWith('0x')) continue
-    if (!v || typeof v !== 'object') continue
-    const name = v.name
-    const url = v.url ?? v.endpointUrl
-    if (typeof name !== 'string' || typeof url !== 'string') continue
-    out[addr.toLowerCase()] = { name, url }
+    const entry = normalizeCreatorEntry(v)
+    if (!entry) continue
+    out[addr.toLowerCase()] = entry
   }
   return out
 }
@@ -101,10 +129,10 @@ function saveServicesByAssetAddress(map) {
   }
 }
 
-/** Persist API name + URL for one Asset contract address (lowercase key in `services.json`). */
-function registerApiByAssetAddress(assetAddress, name, url) {
+/** Persist creator profile for one Asset contract address (lowercase key in `services.json`). */
+function registerCreatorByAssetAddress(assetAddress, creator) {
   const key = assetAddress.toLowerCase()
-  const map = { ...loadServicesByAssetAddress(), [key]: { name, url } }
+  const map = { ...loadServicesByAssetAddress(), [key]: creator }
   saveServicesByAssetAddress(map)
 }
 
@@ -113,7 +141,7 @@ function registerApiByAssetAddress(assetAddress, name, url) {
 // ---------------------------------------------------------------------------
 
 /**
- * `Map<lowercase asset contract address, row>` — deployment row plus optional name/url overlay
+ * `Map<lowercase asset contract address, row>` — deployment row plus optional creator overlay
  * from `services.json` (same address key).
  */
 function buildAssetMetadataByAddress() {
@@ -132,8 +160,11 @@ function buildAssetMetadataByAddress() {
           assetId: asset.assetId,
           assetIdHash: asset.assetIdHash,
           subscriptionPrice: asset.subscriptionPrice,
-          name: getServiceName(asset.assetId),
-          url: undefined,
+          name: getCreatorName(asset.assetId),
+          avatarUrl: undefined,
+          contentImageUrl: undefined,
+          videoUrl: undefined,
+          article: undefined,
         })
       }
     }
@@ -145,39 +176,61 @@ function buildAssetMetadataByAddress() {
       assetIdHash: null,
       subscriptionPrice: null,
       name: overlay.name,
-      url: undefined,
+      avatarUrl: undefined,
+      contentImageUrl: undefined,
+      videoUrl: undefined,
+      article: undefined,
     }
     existing.name = overlay.name
-    existing.url = overlay.url
+    existing.avatarUrl = overlay.avatarUrl
+    existing.contentImageUrl = overlay.contentImageUrl
+    existing.videoUrl = overlay.videoUrl
+    existing.article = overlay.article
     byAddress.set(addr, existing)
   }
 
   return byAddress
 }
 
-function getServiceNameForAddress(assetAddress) {
+function getCreatorNameForAddress(assetAddress) {
   const key = assetAddress.toLowerCase()
   const meta = buildAssetMetadataByAddress().get(key)
-  return meta?.name ?? `Service ${key.slice(0, 10)}`
+  return meta?.name ?? `Creator ${key.slice(0, 10)}`
 }
 
-/** Gated response for subscribers: name + URL for this asset contract address. */
-function getGatedContent(assetAddress) {
+/** Public: name + avatar (visible without subscription). */
+function getCreatorPublicMeta(assetAddress) {
   const key = assetAddress.toLowerCase()
   const meta = buildAssetMetadataByAddress().get(key)
-  if (meta?.url) {
-    return { name: meta.name ?? 'Service', url: meta.url }
-  }
-  if (meta?.assetId) {
-    return {
-      name: meta.name ?? 'Service',
-      url: `https://api.mock-service.local/v1/${meta.assetId}`,
-    }
-  }
-
+  const name = meta?.name ?? `Creator ${key.slice(0, 10)}`
   return {
-    name: `Service ${key.slice(0, 10)}`,
-    url: `https://api.mock-service.local/v1/asset-${key.slice(2, 10)}`,
+    name,
+    avatarUrl:
+      meta?.avatarUrl ??
+      (meta?.assetId
+        ? `https://picsum.photos/seed/avatar-${encodeURIComponent(meta.assetId)}/96/96`
+        : undefined),
+  }
+}
+
+/** Gated content — only returned after subscription check. */
+function getGatedCreatorContent(assetAddress) {
+  const key = assetAddress.toLowerCase()
+  const meta = buildAssetMetadataByAddress().get(key)
+  const name = meta?.name ?? `Creator ${key.slice(0, 10)}`
+  return {
+    name,
+    contentImageUrl:
+      meta?.contentImageUrl ??
+      (meta?.assetId
+        ? `https://picsum.photos/seed/${encodeURIComponent(meta.assetId)}/640/360`
+        : undefined),
+    videoUrl:
+      meta?.videoUrl ??
+      (meta?.assetId ? `https://www.youtube.com/watch?v=dQw4w9WgXcQ` : undefined),
+    article:
+      meta?.article ??
+      `Subscriber-only post from ${name}.\n\nThis is a demo article. Replace it via Admin Console.`,
   }
 }
 
@@ -309,7 +362,7 @@ const server = createServer(async (req, res) => {
 
   const url = new URL(req.url, `http://localhost:${PORT}`)
 
-  // GET /api/gated-urls?assetAddress=0x...&user=0x...
+  // GET /api/gated-creator-content?assetAddress=0x...&user=0x...
   if (url.pathname === '/api/gated-urls' && req.method === 'GET') {
     const assetAddress = url.searchParams.get('assetAddress')
     const user = url.searchParams.get('user')
@@ -322,10 +375,16 @@ const server = createServer(async (req, res) => {
       const isActive = await checkSubscription(assetAddress, user)
 
       if (!isActive) {
-        return json(res, 403, { error: 'Not subscribed', name: null, url: null })
+        return json(res, 403, {
+          error: 'Not subscribed',
+          name: null,
+          contentImageUrl: null,
+          videoUrl: null,
+          article: null,
+        })
       }
 
-      const content = getGatedContent(assetAddress)
+      const content = getGatedCreatorContent(assetAddress)
       return json(res, 200, content)
     } catch (err) {
       console.error('Error checking subscription:', err)
@@ -333,43 +392,71 @@ const server = createServer(async (req, res) => {
     }
   }
 
-  // GET /api/assets — lists merged metadata by asset contract address
+  // GET /api/assets — lists creators (name only; gated fields require subscription)
   if (url.pathname === '/api/assets' && req.method === 'GET') {
     const byAddress = buildAssetMetadataByAddress()
     const assets = []
     for (const [addr, meta] of byAddress) {
-      assets.push({ address: addr, ...meta })
+      assets.push({
+        address: addr,
+        assetId: meta.assetId,
+        assetIdHash: meta.assetIdHash,
+        name: meta.name ?? `Creator ${addr.slice(0, 10)}`,
+        avatarUrl: meta.avatarUrl,
+      })
     }
     return json(res, 200, { assets })
   }
 
-  // GET /api/asset-name?assetAddress=0x... — returns the service name and endpoint URL (public)
+  // GET /api/asset-name?assetAddress=0x... — public: { name, avatarUrl }
   if (url.pathname === '/api/asset-name' && req.method === 'GET') {
     const assetAddress = url.searchParams.get('assetAddress')
     if (!assetAddress) {
       return json(res, 400, { error: 'Missing assetAddress query param' })
     }
-    const { name, url: endpointUrl } = getGatedContent(assetAddress)
-    return json(res, 200, { name, endpointUrl })
+    const meta = getCreatorPublicMeta(assetAddress)
+    return json(res, 200, meta)
   }
 
-  // POST /api/register-service — body: { assetAddress, name, endpointUrl } (optional assetIdHash for logs only)
+  // POST /api/register-service — creator profile (public + gated fields)
   if (url.pathname === '/api/register-service' && req.method === 'POST') {
     let body = ''
     for await (const chunk of req) body += chunk
     try {
       const parsed = JSON.parse(body)
-      const { assetAddress, name, endpointUrl, assetIdHash } = parsed
-      if (!assetAddress || !name || !endpointUrl) {
+      const {
+        assetAddress,
+        name,
+        avatarUrl,
+        contentImageUrl,
+        videoUrl,
+        article,
+        assetIdHash,
+        youtubeUrl,
+        imageUrl,
+      } = parsed
+      if (!assetAddress || !name) {
         return json(res, 400, {
-          error: 'Missing assetAddress, name, or endpointUrl',
+          error: 'Missing assetAddress or name',
         })
       }
-      registerApiByAssetAddress(assetAddress, name, endpointUrl)
+      const entry = normalizeCreatorEntry({
+        name,
+        avatarUrl,
+        contentImageUrl,
+        videoUrl,
+        article,
+        youtubeUrl,
+        imageUrl,
+      })
+      if (!entry) {
+        return json(res, 400, { error: 'Invalid creator profile' })
+      }
+      registerCreatorByAssetAddress(assetAddress, entry)
       const addr = assetAddress.toLowerCase()
       const logSuffix = assetIdHash ? ` assetIdHash=${assetIdHash}` : ''
-      console.log(`[register-service] ${addr} name="${name}" url=${endpointUrl}${logSuffix}`)
-      return json(res, 200, { ok: true, assetAddress: addr, name, endpointUrl })
+      console.log(`[register-service] ${addr} creator="${name}"${logSuffix}`)
+      return json(res, 200, { ok: true, assetAddress: addr, name })
     } catch {
       return json(res, 400, { error: 'Invalid JSON body' })
     }

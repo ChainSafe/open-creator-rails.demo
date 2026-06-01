@@ -23,11 +23,12 @@
   --inverse-primary: #0058cb;
   --primary-fixed-dim: #b0c6ff;
 
-  /* Secondary */
-  --secondary: #bec6e0;
-  --secondary-container: #3f465c;
-  --on-secondary: #283044;
-  --on-secondary-container: #adb4ce;
+  /* Secondary (Stitch: cyan data accents) */
+  --secondary: #d3fbff;
+  --secondary-container: #00eefc;
+  --on-secondary: #00363a;
+  --on-secondary-container: #00686f;
+  --on-secondary-fixed: #002022;
 
   /* Tertiary */
   --tertiary: #bcc7de;
@@ -67,10 +68,13 @@
     rgba(0, 0, 0, 0.4) 0 10px 15px -3px,
     rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
 
-  /* Typography */
-  --sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --heading: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Typography (Stitch: Sora / Geist / JetBrains Mono) */
+  --sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --heading: 'Sora', system-ui, -apple-system, sans-serif;
+  --body: 'JetBrains Mono', ui-monospace, Consolas, monospace;
   --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  --content-max-width: 1200px;
 
   font: 16px/1.5 var(--sans);
   letter-spacing: 0;
@@ -84,7 +88,6 @@
 
 :global(#root) {
   width: 100%;
-  max-width: 1440px;
   margin: 0 auto;
   min-height: 100svh;
   display: flex;
