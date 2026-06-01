@@ -11,16 +11,26 @@ import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { useOcrSdk } from '../ocrSdk'
 import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
 import { erc20PermitAbi } from '../erc20Permit'
-import { useToast } from '../toast/ToastContext'
+import { useToast } from '../toast/useToast'
 import styles from './SubscribeToAssetButton.module.scss'
 
 type Props = {
   assetId: Hex
   /** Smaller layout for list rows (Registry / Your Assets). */
   compact?: boolean
+  /** Stitch-style unlock CTA on creator detail (locked). */
+  unlockPanel?: boolean
+  creatorName?: string
 }
 
-export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
+const MONTH_SECONDS = 30n * 24n * 60n * 60n
+
+export function SubscribeToAssetButton({
+  assetId,
+  compact = false,
+  unlockPanel = false,
+  creatorName = 'this creator',
+}: Props) {
   const sdk = useOcrSdk()
   const qc = useQueryClient()
   const { showToast } = useToast()
@@ -75,6 +85,17 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       return await sdk.Asset.getSubscriptionPrice({ assetAddress: assetAddressQuery.data, count })
     },
     enabled: Boolean(sdk && assetAddressQuery.data),
+  })
+
+  const monthlyPriceQuery = useQuery({
+    queryKey: ['ocr', 'assetMonthlyPrice', assetAddressQuery.data],
+    queryFn: async () => {
+      if (!sdk) throw new Error('SDK not ready')
+      if (!assetAddressQuery.data) throw new Error('Missing asset address')
+      const count = await countPeriodsCoveringSeconds(sdk, assetAddressQuery.data, MONTH_SECONDS)
+      return sdk.Asset.getSubscriptionPrice({ assetAddress: assetAddressQuery.data, count })
+    },
+    enabled: Boolean(unlockPanel && sdk && assetAddressQuery.data),
   })
 
   const tokenMetaQuery = useQuery({
@@ -173,6 +194,88 @@ export function SubscribeToAssetButton({ assetId, compact = false }: Props) {
       showToast(message, { variant: 'error' })
     },
   })
+
+  const monthlyLabel =
+    monthlyPriceQuery.data && tokenMetaQuery.data
+      ? formatUnits(monthlyPriceQuery.data, tokenMetaQuery.data.decimals)
+      : null
+  const totalLabel =
+    priceQuery.data && tokenMetaQuery.data
+      ? `${formatUnits(priceQuery.data, tokenMetaQuery.data.decimals)} ${tokenMetaQuery.data.name}`
+      : priceQuery.isLoading
+        ? '…'
+        : '—'
+
+  if (unlockPanel) {
+    return (
+      <div className={styles.unlockPanel}>
+        <div className={styles.unlockIconWrap}>
+          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+            lock
+          </span>
+        </div>
+        <h2 className={styles.unlockTitle}>Content Locked</h2>
+        <p className={styles.unlockSubtitle}>
+          Access exclusive video, image and article from {creatorName}.
+        </p>
+
+        <div className={styles.priceTier}>
+          <span className={styles.tierLabel}>Subscription</span>
+          <div className={styles.tierPriceRow}>
+            <span className={styles.tierPriceAmount}>
+              {monthlyLabel ?? (monthlyPriceQuery.isLoading ? '…' : '—')}
+            </span>
+            <span className={styles.tierPriceUnit}>
+              {tokenMetaQuery.data?.name ?? 'token'} / month
+            </span>
+          </div>
+          <div className={styles.tierDaysRow}>
+            <label className={styles.tierDaysLabel} htmlFor={`sub-days-${assetId}`}>
+              Days to subscribe
+            </label>
+            <Input
+              id={`sub-days-${assetId}`}
+              type="number"
+              min={1}
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className={styles.tierDaysInput}
+            />
+            <span className={styles.tierTotal}>
+              Total: <strong>{totalLabel}</strong>
+            </span>
+          </div>
+        </div>
+
+        {!isConnected ? (
+          <p className={styles.unlockHint}>Connect a wallet to subscribe.</p>
+        ) : !walletClient ? (
+          <p className={styles.unlockHint}>
+            Switch your wallet to <strong>{appConfig.chain.name}</strong> to subscribe.
+          </p>
+        ) : statusQuery.data?.isActive ? (
+          <p className={styles.unlockHint}>
+            <strong>Already subscribed</strong>
+          </p>
+        ) : (
+          <button
+            type="button"
+            className={styles.unlockCta}
+            disabled={
+              !sdk ||
+              !assetAddressQuery.data ||
+              !tokenAddressQuery.data ||
+              !priceQuery.data ||
+              subscribeMutation.isPending
+            }
+            onClick={() => subscribeMutation.mutate()}
+          >
+            {subscribeMutation.isPending ? 'Subscribing…' : 'Subscribe to Unlock Access'}
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className={compact ? `${styles.container} ${styles.compactContainer}` : styles.container}>

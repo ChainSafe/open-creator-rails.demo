@@ -1,22 +1,8 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import styles from './ToastContext.module.scss'
-
-export type ToastVariant = 'success' | 'error' | 'info'
-
-export type ShowToastOptions = {
-  variant?: ToastVariant
-  /** Auto-dismiss delay in ms (default 4200). */
-  durationMs?: number
-}
+import { ToastContext } from './toastContext'
+import type { ShowToastOptions, ToastVariant } from './toastTypes'
 
 type ToastRecord = {
   id: string
@@ -24,13 +10,6 @@ type ToastRecord = {
   variant: ToastVariant
   durationMs: number
 }
-
-type ToastContextValue = {
-  showToast: (message: string, options?: ShowToastOptions) => void
-  dismissToast: (id: string) => void
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null)
 
 const DEFAULT_DURATION_MS = 4200
 
@@ -125,10 +104,3 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useToast(): ToastContextValue {
-  const ctx = useContext(ToastContext)
-  if (!ctx) {
-    throw new Error('useToast must be used within a ToastProvider')
-  }
-  return ctx
-}

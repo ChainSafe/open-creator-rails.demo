@@ -1,10 +1,10 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAccount, useDisconnect } from 'wagmi'
 
 import { appConfig } from '../config'
 import { Button } from '../components/Button'
 import { useLocalAnvilWallet } from '../useLocalAnvilWallet'
-import { ToastProvider } from '../toast/ToastContext'
+import { ToastProvider } from '../toast/ToastProvider'
 import { useAssetOwnerGate } from '../useAssetOwnerGate'
 import styles from './AppLayout.module.scss'
 
@@ -49,9 +49,9 @@ function HeaderWallet() {
           <code className={styles.walletAddress} title={address}>
             {address ? shortenAddress(address) : ''}
           </code>
-          {isLocalAnvilDev && !needsNetworkSwitch ? (
+          {!needsNetworkSwitch ? (
             <span className={styles.chainBadge} title={`Chain ID ${appConfig.chain.id}`}>
-              Anvil
+              {isLocalAnvilDev ? 'Anvil' : appConfig.chain.name}
             </span>
           ) : null}
           <Button variant="secondary" size="sm" onClick={() => disconnect()}>
@@ -72,14 +72,16 @@ export function AppLayout() {
       <div className={styles.layout}>
         <header className={styles.header}>
           <nav className={styles.nav}>
-            <span className={styles.brand}>
-              <span className={`material-symbols-outlined ${styles.brandIcon}`}>hub</span>
-              Open Creator Rails
-            </span>
-            <div className={styles.navGroup}>
-              <TopLink to="/" label="Marketplace" />
-              <TopLink to="/subscriptions" label="My Subscriptions" />
-              {showCreatorNav ? <TopLink to="/creator-console" label="Creator Console" /> : null}
+            <div className={styles.navStart}>
+              <Link to="/" className={styles.brand} aria-label="Open Creator Rails home">
+                <span className={`material-symbols-outlined ${styles.brandIcon}`}>hub</span>
+                Open Creator Rails
+              </Link>
+              <div className={styles.navGroup}>
+                <TopLink to="/" label="Creators Hub" />
+                <TopLink to="/subscriptions" label="My Subscriptions" />
+                {showCreatorNav ? <TopLink to="/creator-console" label="Admin Console" /> : null}
+              </div>
             </div>
             <div className={styles.walletSlot}>
               <HeaderWallet />
