@@ -1,132 +1,31 @@
 import type { CreatorGatedContent, CreatorProfileInput, CreatorPublicMeta } from './creatorProfile'
 import { appConfig } from './config'
+import { getDemoServiceEntry, writeDemoServiceToSheet } from './demoServicesSheet'
 
 export type { CreatorGatedContent, CreatorProfileInput, CreatorPublicMeta }
-
-type ServiceEntry = CreatorProfileInput
-
-let sheetCache: { map: Record<string, ServiceEntry>; fetchedAt: number } | null = null
-const SHEET_CACHE_MS = 30_000
-
-function normalizeAddress(addr: string) {
-  return addr.toLowerCase()
-}
-
-export function usesDemoServicesSheet(): boolean {
-  return Boolean(appConfig.demoServicesSheetUrl)
-}
 
 function apiUrl(path: string): string {
   const base = appConfig.mockApiUrl.replace(/\/$/, '')
   return `${base}${path}`
 }
 
-function parseCsvLine(line: string): string[] {
-  const out: string[] = []
-  let current = ''
-  let inQuotes = false
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i]
-    if (c === '"') {
-      inQuotes = !inQuotes
-      continue
-    }
-    if (c === ',' && !inQuotes) {
-      out.push(current.trim())
-      current = ''
-      continue
-    }
-    current += c
-  }
-  out.push(current.trim())
-  return out
+/** True when creator profiles are loaded from Google Sheets (frontend only). */
+export function usesDemoServicesSheet(): boolean {
+  return Boolean(appConfig.demoServicesSheetUrl)
 }
 
-function sheetRowsToMap(csv: string): Record<string, ServiceEntry> {
-  const lines = csv.trim().split(/\r?\n/)
-  if (lines.length === 0) return {}
-
-  const header = parseCsvLine(lines[0]!).map((h) => h.toLowerCase())
-  const addrIdx = header.findIndex((h) => h === 'address' || h === 'assetaddress' || h === 'asset')
-  const nameIdx = header.findIndex((h) => h === 'name')
-  const avatarIdx = header.findIndex((h) => h === 'avatar' || h === 'avatarurl')
-  const contentImageIdx = header.findIndex(
-    (h) => h === 'contentimage' || h === 'contentimageurl' || h === 'imageurl',
-  )
-  const videoIdx = header.findIndex((h) => h === 'video' || h === 'videourl' || h === 'youtubeurl')
-  const articleIdx = header.findIndex((h) => h === 'article')
-
-  if (addrIdx < 0 || nameIdx < 0) {
-    throw new Error(
-      'Sheet must have columns: address, name (optional: avatarUrl, contentImageUrl, videoUrl, article)',
-    )
-  }
-
-  const map: Record<string, ServiceEntry> = {}
-  for (const line of lines.slice(1)) {
-    if (!line.trim()) continue
-    const cols = parseCsvLine(line)
-    const address = cols[addrIdx]
-    const name = cols[nameIdx]
-    const avatarUrl = avatarIdx >= 0 ? cols[avatarIdx] : undefined
-    const contentImageUrl = contentImageIdx >= 0 ? cols[contentImageIdx] : undefined
-    const videoUrl = videoIdx >= 0 ? cols[videoIdx] : undefined
-    const article = articleIdx >= 0 ? cols[articleIdx] : undefined
-    if (!address?.startsWith('0x') || !name) continue
-    map[normalizeAddress(address)] = {
-      name,
-      avatarUrl: avatarUrl?.trim() ? avatarUrl.trim() : undefined,
-      contentImageUrl: contentImageUrl?.trim() ? contentImageUrl.trim() : undefined,
-      videoUrl: videoUrl?.trim() ? videoUrl.trim() : undefined,
-      article: article?.trim() ? article : undefined,
-    }
-  }
-  return map
+/** React Query options so sheet-backed pages refetch creator metadata on each mount. */
+export function demoServicesSheetQueryOptions() {
+  if (!usesDemoServicesSheet()) return {}
+  return { staleTime: 0, refetchOnMount: 'always' as const }
 }
 
-async function loadFromGoogleSheet(): Promise<Record<string, ServiceEntry>> {
-  const url = appConfig.demoServicesSheetUrl
-  if (!url) return {}
-
-  const now = Date.now()
-  if (sheetCache && now - sheetCache.fetchedAt < SHEET_CACHE_MS) {
-    return sheetCache.map
-  }
-
-  const resp = await fetch(url, { cache: 'no-store' })
-  if (!resp.ok) throw new Error(`Could not load Google Sheet: HTTP ${resp.status}`)
-  const map = sheetRowsToMap(await resp.text())
-  sheetCache = { map, fetchedAt: now }
-  return map
-}
-
-async function getEntry(assetAddress: string): Promise<ServiceEntry | null> {
-  const key = normalizeAddress(assetAddress)
-
-  if (usesDemoServicesSheet()) {
-    const map = await loadFromGoogleSheet()
-    return map[key] ?? null
-  }
-
-  try {
-    const resp = await fetch(
-      apiUrl(`/api/asset-name?assetAddress=${encodeURIComponent(assetAddress)}`),
-    )
-    if (!resp.ok) return null
-    const data = (await resp.json()) as CreatorPublicMeta
-    if (!data.name) return null
-    return { name: data.name, avatarUrl: data.avatarUrl }
-  } catch {
-    return null
-  }
-}
-
-/** Public metadata (name + avatar) for an asset. */
+/** Public metadata (name + avatar) for an asset contract address. */
 export async function fetchCreatorPublicMeta(
   assetAddress: string,
 ): Promise<CreatorPublicMeta | null> {
   if (usesDemoServicesSheet()) {
-    const entry = await getEntry(assetAddress)
+    const entry = await getDemoServiceEntry(assetAddress)
     if (!entry) return null
     return { name: entry.name, avatarUrl: entry.avatarUrl }
   }
@@ -149,18 +48,25 @@ export async function fetchCreatorMeta(assetAddress: string): Promise<CreatorPub
   return fetchCreatorPublicMeta(assetAddress)
 }
 
+/**
+ * Subscriber-only creator content.
+ * Sheet mode: read from Google Sheet (caller must ensure user is subscribed).
+ * Default: mock API checks subscription and returns content.
+ */
 export async function fetchGatedCreatorContent(
   assetAddress: string,
   userAddress: string,
 ): Promise<CreatorGatedContent | null> {
   if (usesDemoServicesSheet()) {
-    const entry = await getEntry(assetAddress)
-    if (!entry?.article) return null
+    const entry = await getDemoServiceEntry(assetAddress)
+    if (!entry) return null
+    const article = entry.article?.trim()
+    if (!article) return null
     return {
       name: entry.name,
       contentImageUrl: entry.contentImageUrl,
       videoUrl: entry.videoUrl,
-      article: entry.article,
+      article,
     }
   }
 
@@ -171,19 +77,30 @@ export async function fetchGatedCreatorContent(
   )
   if (resp.status === 403) return null
   if (!resp.ok) throw new Error(`Demo API error: ${resp.status}`)
-  return (await resp.json()) as CreatorGatedContent
+  const data = (await resp.json()) as CreatorGatedContent
+  if (!data.article) return null
+  return data
 }
 
-export function demoServiceSheetRow(params: CreatorProfileInput & { assetAddress: string }): string {
-  return `${params.assetAddress.toLowerCase()}\t${params.name.trim()}\t${(params.avatarUrl ?? '').trim()}\t${(params.contentImageUrl ?? '').trim()}\t${(params.videoUrl ?? '').trim()}\t${(params.article ?? '').trim()}`
-}
-
+/**
+ * Persist creator profile for an asset address.
+ * Sheet mode: POST to Google Apps Script web app (CSV publish URL is read-only).
+ * Default: POST to mock API (`services.json`).
+ */
 export async function registerDemoService(
   params: CreatorProfileInput & { assetAddress: string },
-): Promise<void> {
+): Promise<{ sheetMode: boolean }> {
+  const entry: CreatorProfileInput = {
+    name: params.name.trim(),
+    avatarUrl: params.avatarUrl?.trim() || undefined,
+    contentImageUrl: params.contentImageUrl?.trim() || undefined,
+    videoUrl: params.videoUrl?.trim() || undefined,
+    article: params.article,
+  }
+
   if (usesDemoServicesSheet()) {
-    sheetCache = null
-    return
+    await writeDemoServiceToSheet({ ...entry, assetAddress: params.assetAddress })
+    return { sheetMode: true }
   }
 
   const resp = await fetch(apiUrl('/api/register-service'), {
@@ -191,11 +108,7 @@ export async function registerDemoService(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       assetAddress: params.assetAddress,
-      name: params.name.trim(),
-      avatarUrl: params.avatarUrl?.trim() || undefined,
-      contentImageUrl: params.contentImageUrl?.trim() || undefined,
-      videoUrl: params.videoUrl?.trim() || undefined,
-      article: params.article,
+      ...entry,
     }),
   })
 
@@ -203,4 +116,5 @@ export async function registerDemoService(
     const text = await resp.text()
     throw new Error(`Could not register creator: ${text || resp.status}`)
   }
+  return { sheetMode: false }
 }

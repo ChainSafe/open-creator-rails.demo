@@ -111,8 +111,19 @@ export function MySubscriptionsPage() {
 
       {!address ? (
         <p className={hubStyles.status}>Connect wallet to view subscriptions.</p>
-      ) : subsQuery.isLoading ? (
-        <p className={hubStyles.status}>Loading…</p>
+      ) : subsQuery.isLoading || subsQuery.isFetching ? (
+        <div className={hubStyles.grid} aria-busy="true" aria-label="Loading subscriptions">
+          {Array.from({ length: 3 }, (_, i) => (
+            <CreatorHubCard
+              key={`loading-${i}`}
+              assetAddress={`0x${String(i).padStart(40, '0')}` as Address}
+              creatorName=""
+              isLoadingMeta
+              variant="hub"
+              onOpen={() => {}}
+            />
+          ))}
+        </div>
       ) : subsByAsset.length === 0 ? (
         <p className={hubStyles.status}>
           No subscriptions yet.{' '}

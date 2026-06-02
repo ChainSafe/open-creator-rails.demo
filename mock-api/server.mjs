@@ -16,6 +16,8 @@
  *   RPC_URL              (default http://127.0.0.1:8545) — on-chain fallback when indexer lags
  *   SUBSCRIBER_ID        (default "demo" — matches DEMO_SUBSCRIBER_ID in the frontend)
  *   CHAIN_ID             (default 31337)
+ *
+ * Creator profiles from Google Sheets are handled in the frontend (`VITE_DEMO_SERVICES_SHEET_URL`).
  */
 
 import { createServer } from 'node:http'

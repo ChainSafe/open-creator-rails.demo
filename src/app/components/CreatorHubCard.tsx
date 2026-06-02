@@ -24,6 +24,8 @@ type Props = {
   creatorName: string
   /** Public avatar from creator profile; falls back to address-derived cover. */
   avatarUrl?: string
+  /** Creator name/avatar still loading (e.g. Google Sheet). */
+  isLoadingMeta?: boolean
   onOpen: () => void
   /** Hub browse (default), subscribed active, or expired subscription. */
   variant?: CreatorHubCardVariant
@@ -37,6 +39,7 @@ export function CreatorHubCard({
   assetAddress,
   creatorName,
   avatarUrl,
+  isLoadingMeta = false,
   onOpen,
   variant = 'hub',
   timeActiveLabel,
@@ -59,7 +62,7 @@ export function CreatorHubCard({
         source: 'auto',
       })
     },
-    enabled: Boolean(isHub && sdk && address),
+    enabled: Boolean(isHub && sdk && address && !isLoadingMeta),
   })
 
   const tokenAddressQuery = useQuery({
@@ -68,7 +71,7 @@ export function CreatorHubCard({
       if (!sdk) throw new Error('SDK not ready')
       return sdk.Asset.getTokenAddress({ assetAddress })
     },
-    enabled: Boolean(needsPricing && sdk),
+    enabled: Boolean(needsPricing && sdk && !isLoadingMeta),
   })
 
   const priceQuery = useQuery({
@@ -79,7 +82,7 @@ export function CreatorHubCard({
       const price = await sdk.Asset.getSubscriptionPrice({ assetAddress, count })
       return { price }
     },
-    enabled: Boolean(needsPricing && sdk),
+    enabled: Boolean(needsPricing && sdk && !isLoadingMeta),
   })
 
   const tokenMetaQuery = useQuery({
@@ -103,7 +106,7 @@ export function CreatorHubCard({
       const d = typeof decimals === 'bigint' ? Number(decimals) : (decimals as number)
       return { name: name as string, decimals: d }
     },
-    enabled: Boolean(needsPricing && publicClient && tokenAddressQuery.data),
+    enabled: Boolean(needsPricing && publicClient && tokenAddressQuery.data && !isLoadingMeta),
   })
 
   const hubIsActive = Boolean(address && statusQuery.data?.isActive)
@@ -171,53 +174,87 @@ export function CreatorHubCard({
 
   return (
     <article
-      className={styles.card}
-      onClick={onOpen}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onOpen()
-        }
-      }}
-      role="button"
-      tabIndex={0}
+      className={`${styles.card}${isLoadingMeta ? ` ${styles.cardLoading}` : ''}`}
+      onClick={isLoadingMeta ? undefined : onOpen}
+      onKeyDown={
+        isLoadingMeta
+          ? undefined
+          : (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onOpen()
+              }
+            }
+      }
+      role={isLoadingMeta ? 'status' : 'button'}
+      tabIndex={isLoadingMeta ? -1 : 0}
+      aria-busy={isLoadingMeta}
+      aria-label={isLoadingMeta ? 'Loading creator' : undefined}
     >
       <div className={styles.coverWrap}>
         <div
-          className={styles.cover}
-          style={{ backgroundImage: `url(${coverImageUrl})` }}
+          className={`${styles.cover}${isLoadingMeta ? ` ${styles.shimmer}` : ''}`}
+          style={isLoadingMeta ? undefined : { backgroundImage: `url(${coverImageUrl})` }}
           aria-hidden
         />
-        {coverBadge}
+        {isLoadingMeta ? (
+          <span className={styles.loadingOverlay} aria-hidden>
+            <span className={styles.spinner} />
+          </span>
+        ) : (
+          coverBadge
+        )}
       </div>
 
       <div className={styles.body}>
         <div className={styles.identity}>
           <div
-            className={styles.avatar}
-            style={{ backgroundImage: `url(${avatarImageUrl})` }}
+            className={`${styles.avatar}${isLoadingMeta ? ` ${styles.shimmer}` : ''}`}
+            style={isLoadingMeta ? undefined : { backgroundImage: `url(${avatarImageUrl})` }}
             aria-hidden
           />
-          <div>
-            <h3 className={styles.name}>{creatorName}</h3>
-            <p className={styles.address}>{shortenAddress(assetAddress)}</p>
+          <div className={styles.identityText}>
+            {isLoadingMeta ? (
+              <>
+                <span className={`${styles.nameSkeleton} ${styles.shimmer}`} />
+                <span className={`${styles.addressSkeleton} ${styles.shimmer}`} />
+              </>
+            ) : (
+              <>
+                <h3 className={styles.name}>{creatorName}</h3>
+                <p className={styles.address}>{shortenAddress(assetAddress)}</p>
+              </>
+            )}
           </div>
         </div>
 
-        <p className={styles.teaser}>{teaser}</p>
+        {isLoadingMeta ? (
+          <div className={styles.teaserSkeleton}>
+            <span className={`${styles.teaserLine} ${styles.shimmer}`} />
+            <span className={`${styles.teaserLine} ${styles.shimmer}`} />
+          </div>
+        ) : (
+          <p className={styles.teaser}>{teaser}</p>
+        )}
 
         <div className={styles.footer}>
-          {footerMeta}
-          <button
-            type="button"
-            className={actionClass}
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpen()
-            }}
-          >
-            {actionLabel}
-          </button>
+          {isLoadingMeta ? (
+            <span className={`${styles.priceSkeleton} ${styles.shimmer}`} />
+          ) : (
+            <>
+              {footerMeta}
+              <button
+                type="button"
+                className={actionClass}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpen()
+                }}
+              >
+                {actionLabel}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </article>

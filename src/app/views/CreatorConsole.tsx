@@ -10,7 +10,12 @@ import type { CreatorPublicMeta } from '../creatorProfile'
 import { appConfig } from '../config'
 
 const DEMO_ASSET_OWNER_ADDRESS = appConfig.demoTransferOwnerAddress ?? ''
-import { fetchCreatorPublicMeta } from '../demoServicesClient'
+import {
+  demoServicesSheetQueryOptions,
+  fetchCreatorPublicMeta,
+  registerDemoService,
+  usesDemoServicesSheet,
+} from '../demoServicesClient'
 import { createDemoIndexer } from '../indexerClient'
 import { useOcrSdk } from '../ocrSdk'
 import { erc20MetadataAbi } from '../erc20Permit'
@@ -97,6 +102,7 @@ export function CreatorConsole() {
 
   const publicMetaQuery = useQuery<Record<string, CreatorPublicMeta>>({
     queryKey: ['mockApi', 'creatorPublicMeta', myAssets.map((a) => a.id).join(',')],
+    ...demoServicesSheetQueryOptions(),
     queryFn: async () => {
       const meta: Record<string, CreatorPublicMeta> = {}
       await Promise.all(
@@ -193,22 +199,14 @@ export function CreatorConsole() {
       }
       if (!assetAddress) throw new Error('Could not resolve asset address after creation')
 
-      const regResp = await fetch(`${appConfig.mockApiUrl}/api/register-service`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          assetAddress,
-          name: newCreatorName.trim(),
-          avatarUrl: newAvatarUrl.trim() || undefined,
-          contentImageUrl: newContentImageUrl.trim() || undefined,
-          videoUrl: newVideoUrl.trim() || undefined,
-          article: newArticle || undefined,
-        }),
+      await registerDemoService({
+        assetAddress,
+        name: newCreatorName.trim(),
+        avatarUrl: newAvatarUrl.trim() || undefined,
+        contentImageUrl: newContentImageUrl.trim() || undefined,
+        videoUrl: newVideoUrl.trim() || undefined,
+        article: newArticle || undefined,
       })
-      if (!regResp.ok) {
-        const err = await regResp.text()
-        throw new Error(`Mock API register-service failed: ${err}`)
-      }
 
       return txHash
     },
@@ -321,16 +319,23 @@ export function CreatorConsole() {
         <p className={hubStyles.status}>No creators found. Add your first creator to get started.</p>
       ) : (
         <div className={hubStyles.grid}>
-          {myAssets.map((a) => (
-            <CreatorHubCard
-              key={a.id}
-              assetAddress={a.id}
-              creatorName={publicMetaQuery.data?.[a.id.toLowerCase()]?.name ?? 'Creator'}
-              avatarUrl={publicMetaQuery.data?.[a.id.toLowerCase()]?.avatarUrl}
-              variant="admin"
-              onOpen={() => navigate(`/assets/${a.assetId}`)}
-            />
-          ))}
+          {myAssets.map((a) => {
+            const entry = publicMetaQuery.data?.[a.id.toLowerCase()]
+            const metaLoading =
+              publicMetaQuery.isPending ||
+              (publicMetaQuery.isFetching && entry == null)
+            return (
+              <CreatorHubCard
+                key={a.id}
+                assetAddress={a.id}
+                creatorName={entry?.name ?? 'Creator'}
+                avatarUrl={entry?.avatarUrl}
+                isLoadingMeta={metaLoading}
+                variant="admin"
+                onOpen={() => navigate(`/assets/${a.assetId}`)}
+              />
+            )
+          })}
         </div>
       )}
 
@@ -349,6 +354,12 @@ export function CreatorConsole() {
               </button>
             </div>
             <div className={styles.modalBody}>
+              {usesDemoServicesSheet() ? (
+                <p className={styles.addSectionLead}>
+                  Creator metadata is saved to your Google Sheet automatically after deploy (requires{' '}
+                  <code>VITE_DEMO_SERVICES_SHEET_WRITE_URL</code> Apps Script web app).
+                </p>
+              ) : null}
                 <div className={styles.formGrid}>
                 <button
                   type="button"

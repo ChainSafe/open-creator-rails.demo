@@ -1,0 +1,4 @@
+address,name,avatarUrl,contentImageUrl,videoUrl,article
+0x127ac224013f1918823affeb7053b867c496527f,Alice Creator,https://picsum.photos/seed/avatar-demo_asset_1/96/96,https://picsum.photos/seed/demo_asset_1/640/360,https://www.youtube.com/watch?v=dQw4w9WgXcQ,Subscriber-only post from Alice. Demo article from Google Sheet.
+0xb0c6421bde3e29683f5eed0361bf58589de95fc7,Bob Builder,https://picsum.photos/seed/avatar-demo_asset_2/96/96,https://picsum.photos/seed/demo_asset_2/640/360,https://www.youtube.com/watch?v=dQw4w9WgXcQ,Subscriber-only post from Bob. Demo article from Google Sheet.
+0xeb8a04210074254aaae9c65849fb04e3a36c5d26,Cathy Coder,https://picsum.photos/seed/avatar-demo_asset_3/96/96,https://picsum.photos/seed/demo_asset_3/640/360,https://www.youtube.com/watch?v=dQw4w9WgXcQ,Subscriber-only post from Cathy. Demo article from Google Sheet.

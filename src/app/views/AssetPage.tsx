@@ -13,7 +13,11 @@ import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { assetCoverImageUrl } from '../assetCoverImage'
 import { blockExplorerAddressUrl } from '../blockExplorer'
 import type { CreatorGatedContent } from '../creatorProfile'
-import { fetchCreatorPublicMeta } from '../demoServicesClient'
+import {
+  demoServicesSheetQueryOptions,
+  fetchCreatorPublicMeta,
+  fetchGatedCreatorContent,
+} from '../demoServicesClient'
 import { Button } from '../components/Button'
 import { Input } from '../components/Input'
 import { SubscribeToAssetButton } from '../components/SubscribeToAssetButton'
@@ -88,6 +92,7 @@ export function AssetPage() {
 
   const creatorPublicQuery = useQuery({
     queryKey: ['mockApi', 'creatorPublicMeta', assetAddressQuery.data],
+    ...demoServicesSheetQueryOptions(),
     queryFn: async () => {
       const assetAddress = assetAddressQuery.data
       if (!assetAddress) return null
@@ -339,14 +344,11 @@ export function AssetPage() {
 
   const gatedContentQuery = useQuery<CreatorGatedContent | null>({
     queryKey: ['mockApi', 'gatedContent', assetAddressQuery.data, address],
+    ...demoServicesSheetQueryOptions(),
     queryFn: async () => {
       const assetAddress = assetAddressQuery.data
       if (!assetAddress || !address) return null
-      const url = `${appConfig.mockApiUrl}/api/gated-urls?assetAddress=${assetAddress}&user=${address}`
-      const resp = await fetch(url)
-      if (resp.status === 403) return null
-      if (!resp.ok) throw new Error(`Mock API error: ${resp.status}`)
-      return (await resp.json()) as CreatorGatedContent
+      return fetchGatedCreatorContent(assetAddress, address)
     },
     enabled: Boolean(statusQuery.data?.isActive && assetAddressQuery.data && address),
   })
