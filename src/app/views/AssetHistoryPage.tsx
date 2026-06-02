@@ -4,8 +4,9 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { isHex, type Address } from 'viem'
 
-import { blockExplorerAddressUrl } from '../blockExplorer'
 import { appConfig } from '../config'
+import { blockExplorerAddressUrl } from '../blockExplorer'
+import { demoServicesSheetQueryOptions, fetchCreatorPublicMeta } from '../demoServicesClient'
 import styles from './AssetHistoryPage.module.scss'
 
 type AssetEntity = {
@@ -131,12 +132,11 @@ export function AssetHistoryPage() {
 
   const serviceNameQuery = useQuery({
     queryKey: ['mockApi', 'assetName', assetAddress],
+    ...demoServicesSheetQueryOptions(),
     queryFn: async () => {
       if (!assetAddress) return null
-      const resp = await fetch(`${appConfig.mockApiUrl}/api/asset-name?assetAddress=${assetAddress}`)
-      if (!resp.ok) return null
-      const data = await resp.json()
-      return data.name as string
+      const meta = await fetchCreatorPublicMeta(assetAddress)
+      return meta?.name ?? null
     },
     enabled: Boolean(assetAddress),
   })

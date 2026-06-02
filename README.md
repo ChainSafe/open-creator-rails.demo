@@ -155,15 +155,20 @@ This starts a Node server on `http://localhost:4100` that:
 2. Queries the Ponder indexer for an active subscription
 3. If subscribed → returns `{ "name", "url" }`; if not → `403`
 
-Names and URL paths for **seeded** demo assets come from `open-creator-rails.sdk/open-creator-rails/deployments/registries_<chainId>.json` (written by the seed script). Routes created from **Creator Console** call `POST /api/register-service`, which writes **`mock-api/services.json`** (gitignored): each key is a **lowercase asset contract address**, each value is **`{ "name", "url" }`** for the gated API response.
+Names and creator content for **seeded** demo assets come from `registries_<chainId>.json` (addresses from the seed script) merged with **`mock-api/services.json`** (gitignored), written by `POST /api/register-service` from Admin Console.
+
+Optionally, the **frontend** can load creator profiles from **Google Sheets** when `VITE_DEMO_SERVICES_SHEET_URL` is set (mock API unchanged; it still only handles subscription checks for gated content when not using the sheet).
+
+Each profile maps a **lowercase asset contract address** → `name`, `avatarUrl`, `contentImageUrl`, `videoUrl`, `article`.
 
 **Endpoints:**
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/gated-urls?assetAddress=...&user=...` | Returns `{ "name", "url" }` if subscribed, else `403` |
+| `GET /api/gated-urls?assetAddress=...&user=...` | Gated creator content if subscribed, else `403` |
+| `GET /api/asset-name?assetAddress=...` | Public `{ name, avatarUrl }` |
 | `GET /api/assets` | Lists merged metadata by asset address |
-| `POST /api/register-service` | Body: `assetAddress`, `name`, `endpointUrl` — optional `assetIdHash` is logged only |
+| `POST /api/register-service` | Body: `assetAddress`, `name`, optional media fields (disabled when using Google Sheets) |
 | `GET /api/health` | Health check |
 
 **Environment variables** (all optional):
@@ -175,6 +180,23 @@ Names and URL paths for **seeded** demo assets come from `open-creator-rails.sdk
 | `RPC_URL` | `http://127.0.0.1:8545` | JSON-RPC for on-chain subscription check when the indexer lags |
 | `SUBSCRIBER_ID` | `demo` | Must match `DEMO_SUBSCRIBER_ID` in the frontend |
 | `CHAIN_ID` | `31337` | Chain id used to pick `registries_<CHAIN_ID>.json` |
+
+#### Google Sheets (frontend only, optional)
+
+Published CSV URLs are **read-only**. Use two env vars in `.env.anvil`:
+
+```bash
+# Read (Publish to web → CSV)
+VITE_DEMO_SERVICES_SHEET_URL=https://docs.google.com/spreadsheets/d/e/.../pub?output=csv
+# Write (Apps Script web app — see examples/google-apps-script-demo-services-append.gs)
+VITE_DEMO_SERVICES_SHEET_WRITE_URL=https://script.google.com/macros/s/.../exec
+```
+
+1. Copy rows from `examples/demo-creator-services-sheet.csv` into your sheet (update `address` from `registries_31337.json` if you re-seeded).
+2. **Publish to web** as CSV for `VITE_DEMO_SERVICES_SHEET_URL`.
+3. **Extensions → Apps Script** → paste `examples/google-apps-script-demo-services-append.gs` → **Deploy → Web app** (Execute as: Me, Anyone) → copy URL to `VITE_DEMO_SERVICES_SHEET_WRITE_URL`.
+
+When `VITE_DEMO_SERVICES_SHEET_WRITE_URL` is set, the app **reads live data** from the same Apps Script URL (GET). The published CSV URL is only used if the write URL is unset. After updating the script, create a **new deployment** so GET returns rows.
 
 ---
 
@@ -212,13 +234,15 @@ Open `http://localhost:5173` in your browser.
 
 ## Sepolia development
 
-The repo also includes `.env.sepolia` for the hosted Sepolia demo configuration:
+The repo also includes `.env.sepolia.example` (template) for the hosted Sepolia demo:
 
 ```bash
+cp .env.sepolia.example .env.sepolia
+# edit .env.sepolia (registry, indexer, Google Sheet URLs)
 pnpm dev:sepolia
 ```
 
-Edit `.env.sepolia` for different Sepolia RPC/indexer/registry settings.
+For Railway, set the same `VITE_*` variables in the service env and run `pnpm build:sepolia`.
 
 ---
 
@@ -275,6 +299,7 @@ Edit `.env.sepolia` for different Sepolia RPC/indexer/registry settings.
 ├── src/
 │   └── app/                         # React frontend
 ├── .env.anvil                       # Local dev env vars
-├── .env.sepolia                     # Sepolia env vars
+├── .env.sepolia.example             # Sepolia env template (copy → .env.sepolia)
+├── .env.sepolia                     # Sepolia env vars (local / not committed if gitignored)
 └── ponder.anvil.config.ts           # Local Ponder config (chain 31337)
 ```

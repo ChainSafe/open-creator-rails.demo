@@ -6,7 +6,7 @@ import { type Address } from 'viem'
 import { CreatorHubCard } from '../components/CreatorHubCard'
 import type { CreatorPublicMeta } from '../creatorProfile'
 import { appConfig } from '../config'
-import { fetchCreatorPublicMeta } from '../demoServicesClient'
+import { demoServicesSheetQueryOptions, fetchCreatorPublicMeta } from '../demoServicesClient'
 import { createDemoIndexer } from '../indexerClient'
 import styles from './RegistryPage.module.scss'
 
@@ -26,6 +26,7 @@ export function RegistryPage() {
 
   const publicMetaQuery = useQuery<Record<string, CreatorPublicMeta>>({
     queryKey: ['mockApi', 'creatorPublicMeta', assetsQuery.data?.map((a) => a.id).join(',')],
+    ...demoServicesSheetQueryOptions(),
     queryFn: async () => {
       const assets = assetsQuery.data ?? []
       const meta: Record<string, CreatorPublicMeta> = {}
@@ -62,12 +63,16 @@ export function RegistryPage() {
       <div className={styles.grid}>
         {(assetsQuery.data ?? []).map((a: IndexerAssetEntity) => {
           const entry = publicMetaQuery.data?.[a.id.toLowerCase()]
+          const metaLoading =
+            publicMetaQuery.isPending ||
+            (publicMetaQuery.isFetching && entry == null)
           return (
             <CreatorHubCard
               key={a.id}
               assetAddress={a.id as Address}
               creatorName={entry?.name ?? 'Creator'}
               avatarUrl={entry?.avatarUrl}
+              isLoadingMeta={metaLoading}
               onOpen={() => navigate(`/assets/${a.assetId}`)}
             />
           )
