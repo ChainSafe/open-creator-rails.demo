@@ -58,8 +58,14 @@ echo "[2/5] Seeding contracts (TestToken + AssetRegistry + 3 assets)…"
 SEED_OUTPUT="$(./scripts/local-demo-seed.sh 2>&1)"
 
 REGISTRY_ADDRESS="$(echo "$SEED_OUTPUT" | grep '^AssetRegistry:' | awk '{print $2}')"
+TEST_TOKEN_ADDRESS="$(echo "$SEED_OUTPUT" | grep '^TestToken:' | awk '{print $2}')"
 if [ -z "$REGISTRY_ADDRESS" ]; then
   echo "ERROR: Could not parse registry address from seed output."
+  echo "$SEED_OUTPUT"
+  exit 1
+fi
+if [ -z "$TEST_TOKEN_ADDRESS" ]; then
+  echo "ERROR: Could not parse TestToken address from seed output."
   echo "$SEED_OUTPUT"
   exit 1
 fi
@@ -105,6 +111,7 @@ VITE_CHAIN=anvil
 VITE_RPC_URL=$RPC_URL
 VITE_INDEXER_URL=http://localhost:$INDEXER_PORT/graphql
 VITE_REGISTRY_ADDRESS=$REGISTRY_ADDRESS
+VITE_TOKEN_ADDRESS=$TEST_TOKEN_ADDRESS
 VITE_MOCK_API_URL=http://localhost:$MOCK_API_PORT
 VITE_DEMO_TRANSFER_OWNER_ADDRESS=$DEMO_TRANSFER_OWNER_ADDRESS${SHEET_ENV_LINES}
 EOF

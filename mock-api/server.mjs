@@ -15,7 +15,7 @@
  *   INDEXER_URL          (default http://localhost:42069/graphql)
  *   RPC_URL              (default http://127.0.0.1:8545) — on-chain fallback when indexer lags
  *   SUBSCRIBER_ID        (default "demo" — matches DEMO_SUBSCRIBER_ID in the frontend)
- *   CHAIN_ID             (default 31337)
+ *   CHAIN_ID             (default 31337 — use 11155111 when INDEXER_URL points at Sepolia)
  *
  * Creator profiles from Google Sheets are handled in the frontend (`VITE_DEMO_SERVICES_SHEET_URL`).
  */
@@ -280,16 +280,23 @@ async function isSubscriptionActiveOnchain(assetAddress, subscriberBytes32) {
   }
 }
 
+function indexerAssetEntityId(chainId, assetAddress) {
+  return `${Number(chainId)}_${assetAddress.toLowerCase()}`
+}
+
 async function checkSubscription(assetAddress, userAddress) {
   const subHash = subscriberHash(SUBSCRIBER_ID, userAddress)
+  const assetEntityId = indexerAssetEntityId(CHAIN_ID, assetAddress)
 
   let indexerSaysActive = false
 
   try {
     const query = `
-    query CheckSubscription($assetAddress: String!, $subscriber: String!) {
+    query CheckSubscription($assetId: String!, $chainId: Int!, $subscriber: String!) {
       subscriptions(
-        where: { assetId_contains: $assetAddress, subscriber: $subscriber }
+        where: { assetId: $assetId, chainId: $chainId, subscriber: $subscriber }
+        orderBy: "nonce"
+        orderDirection: "desc"
         limit: 1
       ) {
         items {
@@ -307,7 +314,8 @@ async function checkSubscription(assetAddress, userAddress) {
       body: JSON.stringify({
         query,
         variables: {
-          assetAddress: assetAddress.toLowerCase(),
+          assetId: assetEntityId,
+          chainId: Number(CHAIN_ID),
           subscriber: subHash,
         },
       }),

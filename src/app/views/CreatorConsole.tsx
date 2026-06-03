@@ -116,23 +116,14 @@ export function CreatorConsole() {
     enabled: Boolean(myAssets.length > 0),
   })
 
-  const demoTokenAddressQuery = useQuery({
-    queryKey: ['ocr', 'demoTokenAddress', assetsQuery.data?.[0]?.id],
-    queryFn: async () => {
-      if (!sdk) throw new Error('SDK not ready')
-      const firstAsset = assetsQuery.data?.[0]
-      if (!firstAsset) throw new Error('No existing assets to infer demo token from')
-      return sdk.Asset.getTokenAddress({ assetAddress: firstAsset.id })
-    },
-    enabled: Boolean(sdk && assetsQuery.data?.[0]?.id),
-  })
+  const createAssetTokenAddress = appConfig.tokenAddress
 
   const demoTokenMetaQuery = useQuery({
-    queryKey: ['ocr', 'demoTokenMeta', demoTokenAddressQuery.data],
+    queryKey: ['ocr', 'demoTokenMeta', createAssetTokenAddress],
     queryFn: async () => {
-      if (!demoTokenAddressQuery.data) throw new Error('Missing demo token address')
+      if (!createAssetTokenAddress) throw new Error('Missing payment token address')
       if (!publicClient) throw new Error('Public client not ready')
-      const token = demoTokenAddressQuery.data
+      const token = createAssetTokenAddress
       const [name, decimals] = await Promise.all([
         publicClient.readContract({ address: token, abi: erc20MetadataAbi, functionName: 'name', args: [] }),
         publicClient.readContract({ address: token, abi: erc20MetadataAbi, functionName: 'decimals', args: [] }),
@@ -140,7 +131,7 @@ export function CreatorConsole() {
       const d = typeof decimals === 'bigint' ? Number(decimals) : (decimals as number)
       return { name: name as string, decimals: d }
     },
-    enabled: Boolean(demoTokenAddressQuery.data && publicClient),
+    enabled: Boolean(createAssetTokenAddress && publicClient),
   })
 
   const createServiceMutation = useMutation({
@@ -157,9 +148,13 @@ export function CreatorConsole() {
 
       const assetIdHash = keccak256(stringToHex(newCreatorName.trim()))
 
-      const tokenAddress = demoTokenAddressQuery.data
+      const tokenAddress = createAssetTokenAddress
       if (!tokenAddress || !isAddress(tokenAddress, { strict: true })) {
-        throw new Error('No token address available (seed demo assets first)')
+        throw new Error(
+          appConfig.chainKey === 'sepolia'
+            ? 'Missing VITE_TOKEN_ADDRESS (ERC-20 permit token for new assets)'
+            : 'Missing payment token address',
+        )
       }
 
       const ownerInput = newOwnerAddress.trim()
@@ -244,6 +239,16 @@ export function CreatorConsole() {
     return (
       <div className={styles.root}>
         <p>Missing <code>VITE_REGISTRY_ADDRESS</code>.</p>
+      </div>
+    )
+  }
+
+  if (!appConfig.tokenAddress) {
+    return (
+      <div className={styles.root}>
+        <p>
+          Missing <code>VITE_TOKEN_ADDRESS</code> (Sepolia payment token for new creators).
+        </p>
       </div>
     )
   }
