@@ -209,6 +209,7 @@ VITE_CHAIN=anvil
 VITE_RPC_URL=http://127.0.0.1:8545
 VITE_INDEXER_URL=http://localhost:42069/graphql
 VITE_REGISTRY_ADDRESS=0x<REGISTRY_ADDRESS_FROM_STEP_3>
+VITE_TOKEN_ADDRESS=0x<TEST_TOKEN_FROM_SEED>
 VITE_MOCK_API_URL=http://localhost:4100
 ```
 
@@ -238,7 +239,7 @@ The repo also includes `.env.sepolia.example` (template) for the hosted Sepolia 
 
 ```bash
 cp .env.sepolia.example .env.sepolia
-# edit .env.sepolia (registry, indexer, Google Sheet URLs)
+# edit .env.sepolia (registry, token, indexer, Google Sheet URLs)
 pnpm dev:sepolia
 ```
 

@@ -5,11 +5,11 @@ import { appConfig } from '../config'
 import { useAssetOwnerGate } from '../useAssetOwnerGate'
 
 /**
- * Parent route for `/creator-console`: only registry + connected wallet + asset owner may see children.
+ * Parent route for `/creator-console`: registry owner or asset owner (indexer) may see children.
  */
 export function CreatorConsoleParentRoute() {
   const { isConnected } = useAccount()
-  const { isAssetOwner, gateReady } = useAssetOwnerGate()
+  const { canAccessCreatorConsole, gateReady } = useAssetOwnerGate()
 
   if (!appConfig.registryAddress) {
     return <Navigate to="/" replace />
@@ -27,7 +27,7 @@ export function CreatorConsoleParentRoute() {
     )
   }
 
-  if (!isAssetOwner) {
+  if (!canAccessCreatorConsole) {
     return <Navigate to="/" replace />
   }
 

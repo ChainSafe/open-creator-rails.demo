@@ -243,7 +243,7 @@ export function AssetPage() {
   })
 
   const assetSubscribersQuery = useQuery<AssetSubscriberRow[]>({
-    queryKey: ['indexer', 'assetSubscribers', appConfig.indexerUrl, assetAddressQuery.data],
+    queryKey: ['indexer', 'assetSubscribers', appConfig.indexerUrl, appConfig.chain.id, assetAddressQuery.data],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       const assetAddress = assetAddressQuery.data
@@ -252,8 +252,8 @@ export function AssetPage() {
       const graphqlUrl = resolveOpenCreatorRailsIndexerGraphqlUrl(appConfig.indexerUrl)
       const assetEntityId = indexerAssetEntityId(appConfig.chain.id, assetAddress)
       const query = `
-        query AssetSubscriptions($assetId: String!) {
-          subscriptions(where: { assetId: $assetId }, limit: 200, orderBy: "nonce", orderDirection: "desc") {
+        query AssetSubscriptions($assetId: String!, $chainId: Int!) {
+          subscriptions(where: { assetId: $assetId, chainId: $chainId }, limit: 200, orderBy: "nonce", orderDirection: "desc") {
             items {
               subscriber
               payer
@@ -263,7 +263,7 @@ export function AssetPage() {
       `
       const data = await indexerGraphql<{
         subscriptions: { items: Array<{ subscriber: string; payer: string }> }
-      }>(graphqlUrl, query, { assetId: assetEntityId })
+      }>(graphqlUrl, query, { assetId: assetEntityId, chainId: appConfig.chain.id })
 
       const seen = new Set<string>()
       const rows: AssetSubscriberRow[] = []

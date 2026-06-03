@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { isHex, type Address } from 'viem'
 
 import { appConfig } from '../config'
+import { indexerChainId } from '../indexerChain'
 import { blockExplorerAddressUrl } from '../blockExplorer'
 import { demoServicesSheetQueryOptions, fetchCreatorPublicMeta } from '../demoServicesClient'
 import styles from './AssetHistoryPage.module.scss'
@@ -101,14 +102,16 @@ export function AssetHistoryPage() {
     return v as `0x${string}`
   }, [params.assetId])
 
+  const chainId = indexerChainId()
+
   const assetEntityQuery = useQuery({
-    queryKey: ['indexer', 'assetByRegistryAssetId', graphqlUrl, assetId],
+    queryKey: ['indexer', 'assetByRegistryAssetId', graphqlUrl, chainId, assetId],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetId) throw new Error('Missing assetId')
       const query = `
-        query AssetByRegistryAssetId($assetId: String!) {
-          assets(where: { assetId: $assetId }, limit: 1) {
+        query AssetByRegistryAssetId($assetId: String!, $chainId: Int!) {
+          assets(where: { assetId: $assetId, chainId: $chainId }, limit: 1) {
             items {
               id
               address
@@ -119,7 +122,7 @@ export function AssetHistoryPage() {
       const data = await indexerQuery<{ assets: { items: Array<{ id: string; address: string }> } }>(
         graphqlUrl,
         query,
-        { assetId: assetId.toLowerCase() },
+        { assetId: assetId.toLowerCase(), chainId },
       )
       const first = data.assets.items[0]
       if (!first?.address) return null
@@ -142,13 +145,13 @@ export function AssetHistoryPage() {
   })
 
   const createdQuery = useQuery<AssetCreatedEvent[]>({
-    queryKey: ['indexer', 'assetRegistry_AssetCreateds', graphqlUrl, assetId],
+    queryKey: ['indexer', 'assetRegistry_AssetCreateds', graphqlUrl, chainId, assetId],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetId) throw new Error('Missing assetId')
       const query = `
-        query AssetCreateds($assetId: String!) {
-          assetRegistry_AssetCreateds(where: { assetId: $assetId }, orderBy: "blockTimestamp", orderDirection: "asc") {
+        query AssetCreateds($assetId: String!, $chainId: Int!) {
+          assetRegistry_AssetCreateds(where: { assetId: $assetId, chainId: $chainId }, orderBy: "blockTimestamp", orderDirection: "asc") {
             items {
               id
               asset
@@ -173,7 +176,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(graphqlUrl, query, { assetId: assetId.toLowerCase() })
+      }>(graphqlUrl, query, { assetId: assetId.toLowerCase(), chainId })
       return data.assetRegistry_AssetCreateds.items.map((e) => ({
         id: e.id,
         asset: e.asset as Address,
@@ -188,13 +191,13 @@ export function AssetHistoryPage() {
   })
 
   const subsAddedQuery = useQuery<SubscriptionAddedEvent[]>({
-    queryKey: ['indexer', 'asset_SubscriptionAddeds', graphqlUrl, assetAddress],
+    queryKey: ['indexer', 'asset_SubscriptionAddeds', graphqlUrl, chainId, assetAddress],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetAddress) throw new Error('Missing asset address')
       const query = `
-        query SubscriptionAddeds($assetAddress: Address!) {
-          asset_SubscriptionAddeds(where: { assetAddress: $assetAddress }, orderBy: "blockTimestamp", orderDirection: "asc") {
+        query SubscriptionAddeds($assetAddress: Address!, $chainId: Int!) {
+          asset_SubscriptionAddeds(where: { assetAddress: $assetAddress, chainId: $chainId }, orderBy: "blockTimestamp", orderDirection: "asc") {
             items {
               id
               subscriber
@@ -217,7 +220,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase() })
+      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase(), chainId })
       return data.asset_SubscriptionAddeds.items.map((e) => ({
         id: e.id,
         subscriber: e.subscriber,
@@ -232,13 +235,13 @@ export function AssetHistoryPage() {
   })
 
   const priceUpdatedQuery = useQuery<SubscriptionPriceUpdatedEvent[]>({
-    queryKey: ['indexer', 'asset_SubscriptionPriceUpdateds', graphqlUrl, assetAddress],
+    queryKey: ['indexer', 'asset_SubscriptionPriceUpdateds', graphqlUrl, chainId, assetAddress],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetAddress) throw new Error('Missing asset address')
       const query = `
-        query SubscriptionPriceUpdateds($assetAddress: Address!) {
-          asset_SubscriptionPriceUpdateds(where: { assetAddress: $assetAddress }, orderBy: "blockTimestamp", orderDirection: "asc") {
+        query SubscriptionPriceUpdateds($assetAddress: Address!, $chainId: Int!) {
+          asset_SubscriptionPriceUpdateds(where: { assetAddress: $assetAddress, chainId: $chainId }, orderBy: "blockTimestamp", orderDirection: "asc") {
             items {
               id
               newSubscriptionPrice
@@ -255,7 +258,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase() })
+      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase(), chainId })
       return data.asset_SubscriptionPriceUpdateds.items.map((e) => ({
         id: e.id,
         newSubscriptionPrice: BigInt(e.newSubscriptionPrice),
@@ -266,13 +269,13 @@ export function AssetHistoryPage() {
   })
 
   const ownershipQuery = useQuery<OwnershipTransferredEvent[]>({
-    queryKey: ['indexer', 'asset_OwnershipTransferreds', graphqlUrl, assetAddress],
+    queryKey: ['indexer', 'asset_OwnershipTransferreds', graphqlUrl, chainId, assetAddress],
     queryFn: async () => {
       if (!appConfig.indexerUrl) throw new Error('Missing VITE_INDEXER_URL')
       if (!assetAddress) throw new Error('Missing asset address')
       const query = `
-        query OwnershipTransferreds($assetAddress: Address!) {
-          asset_OwnershipTransferreds(where: { assetAddress: $assetAddress }, orderBy: "blockTimestamp", orderDirection: "asc") {
+        query OwnershipTransferreds($assetAddress: Address!, $chainId: Int!) {
+          asset_OwnershipTransferreds(where: { assetAddress: $assetAddress, chainId: $chainId }, orderBy: "blockTimestamp", orderDirection: "asc") {
             items {
               id
               previousOwner
@@ -291,7 +294,7 @@ export function AssetHistoryPage() {
             blockTimestamp: string
           }>
         }
-      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase() })
+      }>(graphqlUrl, query, { assetAddress: assetAddress.toLowerCase(), chainId })
       return data.asset_OwnershipTransferreds.items.map((e) => ({
         id: e.id,
         previousOwner: e.previousOwner as Address,

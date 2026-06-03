@@ -64,8 +64,8 @@ function HeaderWallet() {
 }
 
 export function AppLayout() {
-  const { isAssetOwner, gateReady } = useAssetOwnerGate()
-  const showCreatorNav = gateReady && isAssetOwner
+  const { canAccessCreatorConsole, gateReady } = useAssetOwnerGate()
+  const showCreatorNav = gateReady && canAccessCreatorConsole
 
   return (
     <ToastProvider>
