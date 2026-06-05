@@ -1,8 +1,11 @@
+[phases.setup]
+cmds = ["git submodule update --init open-creator-rails.sdk"]
+
 [phases.install]
 cmds = ["corepack enable", "pnpm install --no-frozen-lockfile"]
 
 [phases.build]
-cmds = ["pnpm exec vite build"]
+cmds = ["pnpm build"]
 
 [start]
 cmd = "npx serve dist -s -l 3000"

@@ -1,6 +1,7 @@
 [submodule "open-creator-rails.sdk"]
 	path = open-creator-rails.sdk
 	url = https://github.com/ChainSafe/open-creator-rails.sdk.git
+	branch = deploy/demo
 [submodule "open-creator-rails.indexer"]
 	path = open-creator-rails.indexer
 	url = https://github.com/ChainSafe/open-creator-rails.indexer.git

@@ -28,7 +28,7 @@ export function useOcrSdk(): OcrSdk | null {
     if (!registryAddress) return null
 
     return new OcrSdk({
-      publicClient,
+      publicClient: publicClient as any,
       walletClient: walletClient ?? undefined,
       registryAddress,
       indexerUrl: appConfig.indexerUrl,
