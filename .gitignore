@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Allow pre-built SDK (committed for Railway deployment)
+!open-creator-rails.sdk/
+!open-creator-rails.sdk/dist/
+!open-creator-rails.sdk/dist/**
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

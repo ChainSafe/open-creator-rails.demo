@@ -1,0 +1,180 @@
+# .invariants.example
+#
+# This file is a template. Copy it to .invariants and fill it in.
+# Delete this comment block when you're done.
+#
+# PURPOSE
+# -------
+# This file declares what must remain true about this repository.
+# It is not documentation. It is not aspirational.
+# Every assert in this file is a claim you are prepared to defend —
+# and that the watcher will verify automatically.
+#
+# WHO OWNS THIS FILE
+# ------------------
+# The maintainer of this repo. Not the agent. Not CI.
+# If you merge a change that breaks an assert, that's a signal,
+# not a bug in the watcher.
+#
+# WHEN TO UPDATE THIS FILE
+# ------------------------
+# - When the repo's responsibilities change
+# - When a dependency contract changes
+# - When a deadline miss or incident reveals an assumption
+#   that was never written down
+# - NOT after a PR is already open. Before.
+#
+# RULE OF THUMB FOR WRITING ASSERTS
+# ----------------------------------
+# A good assert is falsifiable. Ask yourself:
+#   "Would I know within 24 hours if this stopped being true?"
+# If yes — it belongs here.
+# If it's too vague to fail — it doesn't belong here.
+#
+# BAD:  "The code is well structured"         ← not falsifiable
+# GOOD: "No component imports directly from   ← falsifiable, verifiable
+#        the contracts layer — all access
+#        goes through the SDK"
+#
+# SEVERITY LEVELS
+# ---------------
+# FROZEN     — any change forks the protocol. Do not touch without a fork decision.
+# VERSIONED  — can change, but requires a migration plan before the PR lands.
+# ADDITIVE   — new surface only. Nothing existing breaks.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HEADER — fill these in
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "1.0"
+
+scope: "your-org.your-repo-name"
+# Convention: org-name.repo-name
+# Example:    open-creator-rails.demo
+
+inherits: "../.invariants"
+# Point to the parent .invariants
+# The parent .invariants file may live outside of Github entirely. If unsure, leave this line as is.
+
+maintainer: "@github-handle"
+# The person who owns this file. One person. If it's everyone, it's no one.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ASSERTS
+# ─────────────────────────────────────────────────────────────────────────────
+
+asserts:
+
+  # ── EXAMPLE 1: Dependency boundary ──────────────────────────────────────
+  # Use this pattern when your repo must consume something through a specific
+  # abstraction layer (SDK, interface, adapter) and never bypass it.
+
+  - id: no_direct_rpc_calls
+    claim: "This repo accesses on-chain state through the SDK — not via direct RPC"
+    source: codebase
+    severity: FROZEN
+    verify:
+      search: "ethers JsonRpcProvider WebSocketProvider direct rpc"
+    why: >
+      Direct RPC calls bypass SDK-level retry logic, fallback handling, and
+      type safety. Any direct call here is a divergence from the reference
+      architecture and a source of silent failures under load.
+    # ↑ REPLACE with your actual dependency boundary.
+    # Common variants: "accesses DB through the ORM", "calls external APIs
+    # through the gateway", "reads config through the config module".
+
+
+  # ── EXAMPLE 2: Interface contract ───────────────────────────────────────
+  # Use this pattern when this repo exposes or consumes an interface that
+  # another repo depends on. This is your cross-repo coordination surface.
+
+  - id: event_schema_stable
+    claim: "Emitted events match the schema declared in /contracts/events.ts"
+    source: codebase
+    severity: FROZEN
+    verify:
+      search: "emit EventName schema contracts/events"
+    why: >
+      Downstream repos (indexer, SDK) parse these events. An undeclared schema
+      change here breaks them silently — no compiler error, no test failure,
+      just wrong data in production. Schema changes must be declared here
+      before the PR lands.
+    # ↑ REPLACE with your actual interface contract.
+    # Ask: "What does another repo assume about what this repo produces?"
+    # That assumption belongs here as an assert.
+
+
+  # ── EXAMPLE 3: Scope boundary ───────────────────────────────────────────
+  # Use this pattern to record what this repo explicitly does NOT do.
+  # Especially useful on grant projects where scope creep kills deadlines.
+
+  - id: no_auth_logic_in_this_repo
+    claim: "Authentication and authorization logic lives in the auth service — not here"
+    source: codebase
+    severity: VERSIONED
+    verify:
+      search: "jwt verify authenticate authorize token middleware"
+    why: >
+      Auth was explicitly moved out of scope in milestone 1. If auth logic
+      reappears here, it means a scope assumption has silently changed.
+      That needs a conversation, not a commit.
+    # ↑ REPLACE with your actual out-of-scope boundary.
+    # Useful on EF grant projects: "This repo does not implement X —
+    # that is milestone 3 scope." Write it down before someone builds it.
+
+
+  # ── EXAMPLE 4: Operational invariant ────────────────────────────────────
+  # Use this pattern for things that must remain true about how the repo
+  # behaves at runtime — not just at build time.
+
+  - id: no_unbounded_queries
+    claim: "All database queries include a limit — no unbounded result sets"
+    source: codebase
+    severity: VERSIONED
+    verify:
+      search: "findMany find query limit pagination"
+    why: >
+      Unbounded queries are a latent performance failure. They pass in dev,
+      fail in staging, and take down prod. This repo's query patterns are
+      the responsibility of this maintainer.
+    # ↑ REPLACE with your actual operational constraint.
+    # Other common variants: "all external calls have a timeout",
+    # "no synchronous file I/O in request handlers".
+
+
+  # ── EXAMPLE 5: Advisory / drift detection ───────────────────────────────
+  # Use this pattern for things you want to notice but not block on.
+  # Good for surfacing slow drift before it becomes a crisis.
+
+  - id: test_coverage_not_regressing
+    claim: "Test coverage for the core module stays above 70%"
+    source: codebase
+    severity: ADDITIVE
+    verify:
+      search: "coverage core module test"
+    why: >
+      We are not enforcing 100% coverage. We are noticing if it falls
+      below the floor that makes refactoring safe. Below 70% on core logic,
+      we are flying blind.
+    # ↑ REPLACE with your actual quality floor.
+    # ADVISORY asserts don't block — they show up in the watcher report
+    # and surface in triage. That's the point.
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BEFORE YOU SUBMIT THIS FILE FOR REVIEW
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Check each assert against this list:
+#
+#   [ ] The claim is falsifiable — it can fail
+#   [ ] The severity is honest — FROZEN means any change forks the protocol,
+#       VERSIONED means a migration plan is required, ADDITIVE means nothing breaks
+#   [ ] The `why` explains the consequence, not just the rule
+#   [ ] The `verify.search` terms would actually find a violation
+#   [ ] You would notice within 24h if this assert started failing
+#
+# If you're unsure whether something belongs here — add it as ADVISORY.
+# It costs nothing to watch. It costs a lot to miss.
+#
+# ─────────────────────────────────────────────────────────────────────────────
