@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.28.0",
   "scripts": {
     "install:all": "pnpm install && pnpm -C open-creator-rails.indexer install",
-    "postinstall": "pnpm -C open-creator-rails.sdk build",
+    "postinstall": "git submodule update --init open-creator-rails.sdk && pnpm -C open-creator-rails.sdk install && pnpm -C open-creator-rails.sdk build",
     "submodule:sdk:update": "git -C open-creator-rails.sdk fetch origin && git -C open-creator-rails.sdk checkout origin/main && git status --short open-creator-rails.sdk",
     "submodule:indexer:update": "git -C open-creator-rails.indexer fetch origin && git -C open-creator-rails.indexer checkout origin/master && git status --short open-creator-rails.indexer",
     "dev:local": "./scripts/dev-local.sh",
