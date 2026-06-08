@@ -685,11 +685,20 @@ export function AssetPage() {
           </div>
           <div className={styles.lockOverlay}>
             {assetId ? (
-              <SubscribeToAssetButton
-                assetId={assetId}
-                unlockPanel
-                creatorName={creatorName}
-              />
+              appConfig.petShopDemo ? (
+                <div className={styles.petShopSubscribeWrap}>
+                  <p className={styles.petShopSubscribeLead}>
+                    Subscribe to add <strong>{creatorName}</strong> to your farm.
+                  </p>
+                  <SubscribeToAssetButton assetId={assetId} compact />
+                </div>
+              ) : (
+                <SubscribeToAssetButton
+                  assetId={assetId}
+                  unlockPanel
+                  creatorName={creatorName}
+                />
+              )
             ) : null}
           </div>
         </div>

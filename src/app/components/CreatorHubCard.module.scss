@@ -243,3 +243,9 @@
     background: var(--surface-container-highest);
   }
 }
+
+.inlineSubscribe {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+}

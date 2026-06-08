@@ -1,14 +1,17 @@
 import { type IndexerSubscription } from '@open-creator-rails/sdk'
 import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Address, Hex } from 'viem'
 import { useAccount } from 'wagmi'
 
 import { CreatorHubCard } from '../components/CreatorHubCard'
+import { PetCard } from '../components/PetCard'
 import { appConfig } from '../config'
 import { fetchCreatorPublicMeta } from '../demoServicesClient'
 import { createDemoIndexer } from '../indexerClient'
 import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
+import { assetIdFromLabel, petCatalogForChain } from '../petShop/petCatalog'
 import { useOcrSdk } from '../ocrSdk'
 import hubStyles from './RegistryPage.module.scss'
 import styles from './MySubscriptionsPage.module.scss'
@@ -60,6 +63,17 @@ export function MySubscriptionsPage() {
   const navigate = useNavigate()
   const { address } = useAccount()
   const sdk = useOcrSdk()
+  const petShop = appConfig.petShopDemo
+  const petCatalog = petCatalogForChain(appConfig.chainKey)
+
+  const petByAssetId = useMemo(() => {
+    const map = new Map<string, (typeof petCatalog)[number]>()
+    for (const pet of petCatalog) {
+      if (!pet.assetLabel) continue
+      map.set(assetIdFromLabel(pet.assetLabel).toLowerCase(), pet)
+    }
+    return map
+  }, [petCatalog])
 
   const subsQuery = useQuery({
     queryKey: ['indexer', 'listSubscriptionsByUser', appConfig.indexerUrl, address],
@@ -99,6 +113,84 @@ export function MySubscriptionsPage() {
   const subsByAsset = latestSubscriptionPerAsset(subsQuery.data ?? [])
   const activeSubs = subsByAsset.filter((s) => subscriptionRowIsActive(s, now))
   const expiredSubs = subsByAsset.filter((s) => !subscriptionRowIsActive(s, now))
+
+  const petActiveSubs = useMemo(
+    () =>
+      activeSubs.filter((s) => {
+        const pet = petByAssetId.get(s.registryAssetId.toLowerCase())
+        return Boolean(pet)
+      }),
+    [activeSubs, petByAssetId],
+  )
+
+  const petExpiredSubs = useMemo(
+    () =>
+      expiredSubs.filter((s) => {
+        const pet = petByAssetId.get(s.registryAssetId.toLowerCase())
+        return Boolean(pet)
+      }),
+    [expiredSubs, petByAssetId],
+  )
+
+  if (petShop) {
+    return (
+      <div className={`${hubStyles.page} ${hubStyles.pagePetHub}`}>
+        <header className={hubStyles.petHubHero}>
+          <p className={hubStyles.petHubKicker}>Subscriptions</p>
+          <h1 className={hubStyles.petHubTitle}>My furry friends</h1>
+          <p className={hubStyles.petHubSubtitle}>
+            Pets you&apos;ve rented on-chain. Active ones are visiting your farm.
+          </p>
+          <div className={hubStyles.petHubOrbs} aria-hidden>
+            <span>🐐</span>
+            <span>🐑</span>
+            <span>🐔</span>
+          </div>
+        </header>
+
+        {!address ? (
+          <p className={hubStyles.status}>Connect wallet to see your pets.</p>
+        ) : subsQuery.isLoading ? (
+          <p className={hubStyles.status}>Loading subscriptions…</p>
+        ) : petActiveSubs.length === 0 && petExpiredSubs.length === 0 ? (
+          <p className={hubStyles.status}>
+            No pets yet.{' '}
+            <button type="button" className={styles.petLinkBtn} onClick={() => navigate('/')}>
+              Adopt one in Rent-A-Pet
+            </button>
+          </p>
+        ) : (
+          <>
+            {petActiveSubs.length > 0 ? (
+              <section className={styles.petSection}>
+                <h2 className={styles.petSectionTitle}>Visiting your farm</h2>
+                <div className={hubStyles.petGrid}>
+                  {petActiveSubs.map((s) => {
+                    const pet = petByAssetId.get(s.registryAssetId.toLowerCase())!
+                    return <PetCard key={s.id} pet={pet} assetId={s.registryAssetId} />
+                  })}
+                </div>
+              </section>
+            ) : (
+              <p className={hubStyles.status}>No active pets right now.</p>
+            )}
+
+            {petExpiredSubs.length > 0 ? (
+              <section className={styles.petSection}>
+                <h2 className={styles.petSectionTitle}>Past rentals</h2>
+                <div className={hubStyles.petGrid}>
+                  {petExpiredSubs.map((s) => {
+                    const pet = petByAssetId.get(s.registryAssetId.toLowerCase())!
+                    return <PetCard key={s.id} pet={pet} assetId={s.registryAssetId} />
+                  })}
+                </div>
+              </section>
+            ) : null}
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className={hubStyles.page}>
@@ -151,6 +243,7 @@ export function MySubscriptionsPage() {
                   <CreatorHubCard
                     key={s.id}
                     assetAddress={s.assetAddress}
+                    registryAssetId={s.registryAssetId}
                     creatorName={s.serviceName ?? 'Creator'}
                     avatarUrl={s.avatarUrl}
                     variant="expired"

@@ -9,6 +9,7 @@ import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { erc20MetadataAbi } from '../erc20Permit'
 import { useOcrSdk } from '../ocrSdk'
 import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
+import { SubscribeToAssetButton } from './SubscribeToAssetButton'
 import styles from './CreatorHubCard.module.scss'
 
 const MONTH_SECONDS = 30n * 24n * 60n * 60n
@@ -31,6 +32,9 @@ type Props = {
   timeActiveLabel?: string
   /** Cover badge when variant is expired (e.g. "Expired" or "Revoked"). */
   expiredBadgeLabel?: string
+  /** Pet shop: subscribe with minute pricing inline instead of navigating away. */
+  petShopInlineSubscribe?: boolean
+  registryAssetId?: Hex
 }
 
 export function CreatorHubCard({
@@ -41,6 +45,8 @@ export function CreatorHubCard({
   variant = 'hub',
   timeActiveLabel,
   expiredBadgeLabel = 'Expired',
+  petShopInlineSubscribe = false,
+  registryAssetId,
 }: Props) {
   const sdk = useOcrSdk()
   const publicClient = usePublicClient({ chainId: appConfig.chain.id })
@@ -137,9 +143,13 @@ export function CreatorHubCard({
     variant === 'admin'
       ? 'Update subscription pricing and gated content on the creator page.'
       : variant === 'active'
-        ? 'You have access to subscriber-only content from this creator.'
+        ? petShopInlineSubscribe || appConfig.petShopDemo
+          ? 'This pet is visiting your farm.'
+          : 'You have access to subscriber-only content from this creator.'
         : variant === 'expired'
-          ? 'Your subscription has ended. Re-subscribe to unlock content again.'
+          ? petShopInlineSubscribe
+            ? 'Your rental ended. Subscribe again to bring them back.'
+            : 'Your subscription has ended. Re-subscribe to unlock content again.'
           : hubIsActive
             ? 'You have access to subscriber-only content from this creator.'
             : 'Subscribe to unlock video, image and article from this creator.'
@@ -208,16 +218,26 @@ export function CreatorHubCard({
 
         <div className={styles.footer}>
           {footerMeta}
-          <button
-            type="button"
-            className={actionClass}
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpen()
-            }}
-          >
-            {actionLabel}
-          </button>
+          {variant === 'expired' && petShopInlineSubscribe && registryAssetId ? (
+            <div
+              className={styles.inlineSubscribe}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <SubscribeToAssetButton assetId={registryAssetId} compact />
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={actionClass}
+              onClick={(e) => {
+                e.stopPropagation()
+                onOpen()
+              }}
+            >
+              {actionLabel}
+            </button>
+          )}
         </div>
       </div>
     </article>

@@ -15,6 +15,24 @@
   margin: 0 0 24px;
 }
 
+.petSection {
+  margin-bottom: 32px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.petSectionTitle {
+  margin: 0 0 16px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2d6a4f;
+}
+
 .linkBtn {
   font-family: var(--body);
   font-size: inherit;
@@ -27,5 +45,21 @@
 
   &:hover {
     color: var(--primary-container);
+  }
+}
+
+.petLinkBtn {
+  font-family: var(--sans);
+  font-size: inherit;
+  font-weight: 700;
+  color: #2d6a4f;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:hover {
+    color: #1b4332;
   }
 }
