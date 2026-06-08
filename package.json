@@ -17,7 +17,8 @@
     "build:anvil": "tsc -b && vite build --mode anvil",
     "build:sepolia": "tsc -b && vite build --mode sepolia",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "serve dist -s -l ${PORT:-3000}"
   },
   "dependencies": {
     "@open-creator-rails/sdk": "workspace:*",
@@ -26,14 +27,12 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.2",
+    "serve": "^14.2.6",
     "viem": "^2.52.0",
     "wagmi": "^3.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "graphql": "^16.14.0",
-    "graphql-yoga": "^5.21.0",
-    "hono": "^4.12.18",
     "@types/node": "^24.12.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -42,6 +41,9 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "graphql": "^16.14.0",
+    "graphql-yoga": "^5.21.0",
+    "hono": "^4.12.18",
     "ponder": "^0.16.6",
     "sass": "^1.98.0",
     "typescript": "~5.9.3",
