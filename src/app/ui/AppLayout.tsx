@@ -96,9 +96,9 @@ export function AppLayout() {
                 {petShop ? 'OCR Pet Shop' : 'Open Creator Rails'}
               </Link>
               <div className={styles.navGroup}>
-                <TopLink to="/" label="Creators Hub" />
-                {appConfig.petShopDemo ? <TopLink to="/pet-shop" label="Pet Shop" /> : null}
-                <TopLink to="/subscriptions" label="My Subscriptions" />
+                <TopLink to="/" label="Rent-A-Pet" />
+                {appConfig.petShopDemo ? <TopLink to="/pet-shop" label="My Little Farm" /> : null}
+                <TopLink to="/subscriptions" label="My furry Friends" />
                 {showCreatorNav ? <TopLink to="/creator-console" label="Admin Console" /> : null}
               </div>
             </div>

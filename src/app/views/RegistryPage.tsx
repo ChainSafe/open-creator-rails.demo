@@ -82,15 +82,9 @@ export function RegistryPage() {
 
       {petShop ? (
         <>
-          {!hubAssetsQuery.isLoading && petRows.length === 0 ? (
-            <p className={styles.status}>
-              No mapped pets found. Use Base Sepolia + Railway indexer (see <code>.env.pet-shop</code>) or
-              run local Anvil with <code>.env.anvil</code>.
-            </p>
-          ) : null}
           <div className={styles.petGrid}>
             {petRows.map(({ pet, assetId }) => (
-              <PetCard key={assetId} pet={pet} assetId={assetId} />
+              <PetCard key={pet.slug} pet={pet} assetId={assetId} />
             ))}
           </div>
         </>

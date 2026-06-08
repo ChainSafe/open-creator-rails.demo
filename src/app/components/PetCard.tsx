@@ -12,17 +12,18 @@ import styles from './PetCard.module.scss'
 
 type Props = {
   pet: PetDefinition
-  assetId: Hex
+  assetId?: Hex
 }
 
 export function PetCard({ pet, assetId }: Props) {
   const sdk = useOcrSdk()
   const { address } = useAccount()
+  const subscribable = Boolean(assetId)
 
   const assetAddressQuery = useQuery({
     queryKey: ['ocr', 'assetAddress', assetId],
     queryFn: async () => {
-      if (!sdk) throw new Error('SDK not ready')
+      if (!sdk || !assetId) throw new Error('SDK not ready')
       return sdk.AssetRegistry.getAsset({ assetId })
     },
     enabled: Boolean(sdk && assetId),
@@ -39,7 +40,7 @@ export function PetCard({ pet, assetId }: Props) {
         source: 'auto',
       })
     },
-    enabled: Boolean(sdk && assetAddressQuery.data && address),
+    enabled: Boolean(sdk && assetAddressQuery.data && address && subscribable),
     refetchInterval: 10_000,
   })
 
@@ -47,24 +48,26 @@ export function PetCard({ pet, assetId }: Props) {
 
   return (
     <article className={styles.card} style={{ '--pet-accent': pet.accent } as CSSProperties}>
-      <div className={styles.hero}>
-        <span className={styles.emoji} aria-hidden>
-          {pet.emoji}
-        </span>
+      <div className={styles.content}>
         {isActive ? <span className={styles.badge}>In your farm</span> : null}
-      </div>
-      <div className={styles.body}>
         <p className={styles.species}>{pet.species}</p>
         <h3 className={styles.name}>{pet.name}</h3>
         <p className={styles.tagline}>{pet.tagline}</p>
-        <div className={styles.subscribe}>
-          <SubscribeToAssetButton assetId={assetId} compact initialDays={1} />
-          {isActive ? (
-            <Link to="/pet-shop" className={styles.farmLink}>
-              View in your farm →
-            </Link>
-          ) : null}
-        </div>
+        {subscribable || isActive ? (
+          <div className={styles.subscribe}>
+            {subscribable && assetId ? (
+              <SubscribeToAssetButton assetId={assetId} compact initialDays={1} />
+            ) : null}
+            {isActive ? (
+              <Link to="/pet-shop" className={styles.farmLink}>
+                View in your farm →
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      <div className={styles.figure} aria-hidden>
+        <img className={styles.portrait} src={pet.image} alt="" />
       </div>
     </article>
   )

@@ -5,12 +5,12 @@ import { type Address, type Hex } from 'viem'
 
 import { appConfig } from '../config'
 import { createDemoIndexer } from '../indexerClient'
-import { petCatalogForChain, resolvePetByAssetId, type PetDefinition } from './petCatalog'
+import { assetIdFromLabel, petCatalogForChain, type PetDefinition } from './petCatalog'
 
 export type PetRow = {
   pet: PetDefinition
-  assetId: Hex
-  asset: IndexerAssetEntity
+  assetId?: Hex
+  asset?: IndexerAssetEntity
 }
 
 export function usePetRows() {
@@ -30,22 +30,27 @@ export function usePetRows() {
 
   const petRows = useMemo(() => {
     const assets = assetsQuery.data ?? []
-    const rows: PetRow[] = []
 
-    for (const asset of assets) {
-      const pet = resolvePetByAssetId(asset.assetId as Hex, appConfig.chainKey)
-      if (!pet) continue
-      rows.push({ pet, assetId: asset.assetId as Hex, asset })
-    }
+    return catalog.map((pet) => {
+      if (!pet.assetLabel) {
+        return { pet }
+      }
 
-    rows.sort((a, b) => {
-      const ai = catalog.findIndex((p) => p.slug === a.pet.slug)
-      const bi = catalog.findIndex((p) => p.slug === b.pet.slug)
-      return ai - bi
+      const assetId = assetIdFromLabel(pet.assetLabel)
+      const asset = assets.find((a) => (a.assetId as Hex).toLowerCase() === assetId.toLowerCase())
+
+      return {
+        pet,
+        assetId: asset ? (asset.assetId as Hex) : assetId,
+        asset,
+      }
     })
-
-    return rows
   }, [assetsQuery.data, catalog])
 
-  return { assetsQuery, petRows, catalog }
+  const subscribableRows = useMemo(
+    () => petRows.filter((row): row is PetRow & { assetId: Hex } => Boolean(row.assetId)),
+    [petRows],
+  )
+
+  return { assetsQuery, petRows, subscribableRows, catalog }
 }

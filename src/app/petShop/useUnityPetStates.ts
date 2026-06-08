@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import type { Hex } from 'viem'
 import { useAccount } from 'wagmi'
 
 import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
@@ -10,11 +11,15 @@ export function useUnityPetStates(petRows: PetRow[]) {
   const sdk = useOcrSdk()
   const { address } = useAccount()
 
+  const subscribableRows = petRows.filter(
+    (row): row is PetRow & { assetId: Hex } => Boolean(row.assetId),
+  )
+
   return useQuery({
-    queryKey: ['petShop', 'unityPets', address, petRows.map((r) => r.assetId).join(',')],
+    queryKey: ['petShop', 'unityPets', address, subscribableRows.map((r) => r.assetId).join(',')],
     queryFn: async (): Promise<UnityPetState[]> => {
       if (!sdk || !address) {
-        return petRows.map(({ pet }) => ({
+        return subscribableRows.map(({ pet }) => ({
           slug: pet.slug,
           name: pet.name,
           emoji: pet.emoji,
@@ -24,7 +29,7 @@ export function useUnityPetStates(petRows: PetRow[]) {
       }
 
       return Promise.all(
-        petRows.map(async ({ pet, assetId }) => {
+        subscribableRows.map(async ({ pet, assetId }) => {
           const assetAddress = await sdk.AssetRegistry.getAsset({ assetId })
           const status = await sdk.Asset.getSubscriptionStatus({
             assetAddress,
@@ -42,7 +47,7 @@ export function useUnityPetStates(petRows: PetRow[]) {
         }),
       )
     },
-    enabled: petRows.length > 0,
+    enabled: subscribableRows.length > 0,
     refetchInterval: 8_000,
   })
 }
