@@ -1,0 +1,34 @@
+/* Farm pet-shop skin — active when .pet-shop-mode is on the layout root */
+
+.pet-shop-mode {
+  --farm-sky: #b8e0f5;
+  --farm-sky-deep: #7ec8e3;
+  --farm-meadow: #c8e6c9;
+  --farm-meadow-deep: #81c784;
+  --farm-cream: #fffdf8;
+  --farm-ink: #1b2e1f;
+  --farm-ink-muted: #4a6350;
+  --farm-glass: rgba(255, 255, 255, 0.72);
+  --farm-glass-border: rgba(255, 255, 255, 0.85);
+  --farm-shadow: 0 20px 50px rgba(27, 46, 31, 0.12), 0 8px 20px rgba(27, 46, 31, 0.06);
+  --farm-shadow-soft: 0 12px 32px rgba(27, 46, 31, 0.08);
+  --farm-radius-lg: 28px;
+  --farm-radius-md: 20px;
+  --farm-radius-pill: 999px;
+
+  --surface: #dff3fb;
+  --surface-container: rgba(255, 255, 255, 0.55);
+  --surface-container-high: rgba(255, 255, 255, 0.82);
+  --on-surface: var(--farm-ink);
+  --on-surface-variant: var(--farm-ink-muted);
+  --on-background: var(--farm-ink);
+  --primary: #2d6a4f;
+  --primary-container: #95d5b2;
+  --on-primary: #ffffff;
+  --outline-variant: rgba(45, 106, 79, 0.12);
+  --success: #2d6a4f;
+}
+
+.pet-shop-mode #root {
+  min-height: 100svh;
+}

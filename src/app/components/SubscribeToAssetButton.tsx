@@ -21,6 +21,8 @@ type Props = {
   /** Stitch-style unlock CTA on creator detail (locked). */
   unlockPanel?: boolean
   creatorName?: string
+  /** Initial days input (pet shop defaults to 1). */
+  initialDays?: number
 }
 
 const MONTH_SECONDS = 30n * 24n * 60n * 60n
@@ -30,6 +32,7 @@ export function SubscribeToAssetButton({
   compact = false,
   unlockPanel = false,
   creatorName = 'this creator',
+  initialDays = 30,
 }: Props) {
   const sdk = useOcrSdk()
   const qc = useQueryClient()
@@ -37,7 +40,7 @@ export function SubscribeToAssetButton({
   const { address, isConnected } = useAccount()
   const { data: walletClient } = useWalletClient({ chainId: appConfig.chain.id })
   const publicClient = usePublicClient({ chainId: appConfig.chain.id })
-  const [days, setDays] = useState(30)
+  const [days, setDays] = useState(initialDays)
 
   const durationSeconds = useMemo(() => BigInt(Math.max(1, days)) * 24n * 60n * 60n, [days])
 

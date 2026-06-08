@@ -38,6 +38,11 @@ const defaultIndexerUrls: Record<ChainKey, string> = {
   'base-sepolia': 'https://indexer-api-production-c33d.up.railway.app/',
 }
 
+function envFlag(v: string | undefined): boolean {
+  const s = trimEnv(v)?.toLowerCase()
+  return s === '1' || s === 'true' || s === 'yes'
+}
+
 export const appConfig = {
   chainKey,
   chain,
@@ -45,6 +50,10 @@ export const appConfig = {
   registryAddress: trimEnv(import.meta.env.VITE_REGISTRY_ADDRESS) as `0x${string}` | undefined,
   indexerUrl: trimEnv(import.meta.env.VITE_INDEXER_URL) ?? defaultIndexerUrls[chainKey],
   mockApiUrl: trimEnv(import.meta.env.VITE_MOCK_API_URL) ?? 'http://localhost:4100',
+  /** When true, home route shows the pet shop split demo. */
+  petShopDemo: envFlag(import.meta.env.VITE_PET_SHOP_DEMO),
+  /** Unity WebGL build URL (placeholder until SampleProject WebGL is exported). */
+  unityPlayerUrl: trimEnv(import.meta.env.VITE_UNITY_PLAYER_URL) ?? '/pet-shop-player/index.html',
   /** Optional: Google Sheet CSV export URL for creator metadata (dev/demo). */
   demoServicesSheetUrl: trimEnv(import.meta.env.VITE_DEMO_SERVICES_SHEET_URL),
   /** Local dev: Anvil account #3 — pre-filled as Add Creator asset owner (transfer demo). */

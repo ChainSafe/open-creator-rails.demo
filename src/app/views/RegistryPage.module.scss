@@ -51,3 +51,87 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+.pagePetHub {
+  max-width: 100%;
+}
+
+.petHubHero {
+  position: relative;
+  margin-bottom: 28px;
+  padding: 28px 24px 32px;
+  border-radius: 28px;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.45)),
+    linear-gradient(160deg, #b7e4c7 0%, #d8f3dc 40%, #95d5b2 100%);
+  box-shadow: var(--farm-shadow, 0 20px 50px rgba(27, 46, 31, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.petHubKicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2d6a4f;
+}
+
+.petHubTitle {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #1b2e1f;
+  max-width: 12ch;
+}
+
+.petHubSubtitle {
+  margin: 12px 0 0;
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: #4a6350;
+  max-width: 36ch;
+}
+
+.petHubOrbs {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 8px;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  opacity: 0.92;
+  filter: drop-shadow(0 12px 20px rgba(27, 46, 31, 0.15));
+
+  span:nth-child(2) {
+    transform: translateY(8px) scale(1.08);
+  }
+
+  @media (max-width: 640px) {
+    position: static;
+    transform: none;
+    margin-top: 20px;
+    justify-content: flex-start;
+  }
+}
+
+.petGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 960px) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}

@@ -11,6 +11,8 @@
     "dev:local": "./scripts/dev-local.sh",
     "dev": "vite",
     "dev:anvil": "vite --mode anvil",
+    "dev:pet-shop": "vite --mode pet-shop",
+    "dev:pet-shop:anvil": "vite --mode pet-shop.anvil",
     "dev:sepolia": "vite --mode sepolia",
     "dev:mock-api": "node mock-api/server.mjs",
     "build": "tsc -b && vite build",

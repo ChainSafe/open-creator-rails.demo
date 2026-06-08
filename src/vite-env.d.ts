@@ -6,5 +6,7 @@ interface ImportMetaEnv {
   readonly VITE_REGISTRY_ADDRESS?: string
   readonly VITE_INDEXER_URL?: string
   readonly VITE_MOCK_API_URL?: string
+  readonly VITE_PET_SHOP_DEMO?: string
+  readonly VITE_UNITY_PLAYER_URL?: string
 }
 

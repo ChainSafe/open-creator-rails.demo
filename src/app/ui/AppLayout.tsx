@@ -1,6 +1,7 @@
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAccount, useDisconnect } from 'wagmi'
 
+import '../petShop/petShop.global.scss'
 import { appConfig } from '../config'
 import { Button } from '../components/Button'
 import { useLocalAnvilWallet } from '../useLocalAnvilWallet'
@@ -66,19 +67,37 @@ function HeaderWallet() {
 export function AppLayout() {
   const { isAssetOwner, gateReady } = useAssetOwnerGate()
   const showCreatorNav = gateReady && isAssetOwner
+  const location = useLocation()
+  const petShop = appConfig.petShopDemo
+  const isFarmView = petShop && location.pathname === '/pet-shop'
+
+  const layoutClass = [
+    styles.layout,
+    petShop ? 'pet-shop-mode' : '',
+    petShop ? styles.layoutPetShop : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const mainClass = [styles.main, petShop ? styles.mainPetShop : '', isFarmView ? styles.mainFarm : '']
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <ToastProvider>
-      <div className={styles.layout}>
-        <header className={styles.header}>
+      <div className={layoutClass}>
+        <header className={petShop ? styles.headerPetShop : styles.header}>
           <nav className={styles.nav}>
             <div className={styles.navStart}>
-              <Link to="/" className={styles.brand} aria-label="Open Creator Rails home">
-                <span className={`material-symbols-outlined ${styles.brandIcon}`}>hub</span>
-                Open Creator Rails
+              <Link to="/" className={styles.brand} aria-label="OCR Pet Shop home">
+                <span className={`material-symbols-outlined ${styles.brandIcon}`}>
+                  {petShop ? 'pets' : 'hub'}
+                </span>
+                {petShop ? 'OCR Pet Shop' : 'Open Creator Rails'}
               </Link>
               <div className={styles.navGroup}>
                 <TopLink to="/" label="Creators Hub" />
+                {appConfig.petShopDemo ? <TopLink to="/pet-shop" label="Pet Shop" /> : null}
                 <TopLink to="/subscriptions" label="My Subscriptions" />
                 {showCreatorNav ? <TopLink to="/creator-console" label="Admin Console" /> : null}
               </div>
@@ -88,7 +107,7 @@ export function AppLayout() {
             </div>
           </nav>
         </header>
-        <main className={styles.main}>
+        <main className={mainClass}>
           <Outlet />
         </main>
       </div>

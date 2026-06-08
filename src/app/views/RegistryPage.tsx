@@ -4,14 +4,19 @@ import { useNavigate } from 'react-router-dom'
 import { type Address } from 'viem'
 
 import { CreatorHubCard } from '../components/CreatorHubCard'
+import { PetCard } from '../components/PetCard'
 import type { CreatorPublicMeta } from '../creatorProfile'
 import { appConfig } from '../config'
 import { fetchCreatorPublicMeta } from '../demoServicesClient'
 import { createDemoIndexer } from '../indexerClient'
+import { usePetRows } from '../petShop/usePetRows'
 import styles from './RegistryPage.module.scss'
 
 export function RegistryPage() {
   const navigate = useNavigate()
+  const petShop = appConfig.petShopDemo
+  const { assetsQuery: petAssetsQuery, petRows } = usePetRows()
+
   const assetsQuery = useQuery({
     queryKey: ['indexer', 'listAssetsByRegistry', appConfig.indexerUrl, appConfig.registryAddress],
     queryFn: async () => {
@@ -21,7 +26,7 @@ export function RegistryPage() {
         registryAddress: appConfig.registryAddress as Address,
       })
     },
-    enabled: Boolean(appConfig.registryAddress),
+    enabled: Boolean(appConfig.registryAddress) && !petShop,
   })
 
   const publicMetaQuery = useQuery<Record<string, CreatorPublicMeta>>({
@@ -37,42 +42,79 @@ export function RegistryPage() {
       )
       return meta
     },
-    enabled: Boolean(assetsQuery.data?.length),
+    enabled: Boolean(assetsQuery.data?.length) && !petShop,
   })
 
+  const hubAssetsQuery = petShop ? petAssetsQuery : assetsQuery
+
   return (
-    <div className={styles.page}>
-      <header className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Creators Hub</h1>
-        <p className={styles.pageSubtitle}>
-          Subscribre to creators to unlock their content.
-        </p>
+    <div className={petShop ? `${styles.page} ${styles.pagePetHub}` : styles.page}>
+      <header className={petShop ? styles.petHubHero : styles.pageHeader}>
+        {petShop ? (
+          <>
+            <p className={styles.petHubKicker}>Creators Hub</p>
+            <h1 className={styles.petHubTitle}>Adopt a farm friend</h1>
+            <p className={styles.petHubSubtitle}>
+              Subscribe on-chain, then visit Pet Shop to watch your animals appear.
+            </p>
+            <div className={styles.petHubOrbs} aria-hidden>
+              <span>🐔</span>
+              <span>🐷</span>
+              <span>🐑</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 className={styles.pageTitle}>Creators Hub</h1>
+            <p className={styles.pageSubtitle}>Subscribe to creators to unlock their content.</p>
+          </>
+        )}
       </header>
 
-      {assetsQuery.isLoading ? <p className={styles.status}>Loading creators…</p> : null}
-      {assetsQuery.error ? (
+      {hubAssetsQuery.isLoading ? (
+        <p className={styles.status}>{petShop ? 'Loading pets…' : 'Loading creators…'}</p>
+      ) : null}
+      {hubAssetsQuery.error ? (
         <p className={styles.status}>
-          Indexer error: <code>{(assetsQuery.error as Error).message}</code>
+          Indexer error: <code>{(hubAssetsQuery.error as Error).message}</code>
         </p>
       ) : null}
-      {!assetsQuery.isLoading && (assetsQuery.data?.length ?? 0) === 0 ? (
-        <p className={styles.status}>No creators available yet.</p>
-      ) : null}
 
-      <div className={styles.grid}>
-        {(assetsQuery.data ?? []).map((a: IndexerAssetEntity) => {
-          const entry = publicMetaQuery.data?.[a.id.toLowerCase()]
-          return (
-            <CreatorHubCard
-              key={a.id}
-              assetAddress={a.id as Address}
-              creatorName={entry?.name ?? 'Creator'}
-              avatarUrl={entry?.avatarUrl}
-              onOpen={() => navigate(`/assets/${a.assetId}`)}
-            />
-          )
-        })}
-      </div>
+      {petShop ? (
+        <>
+          {!hubAssetsQuery.isLoading && petRows.length === 0 ? (
+            <p className={styles.status}>
+              No mapped pets found. Use Base Sepolia + Railway indexer (see <code>.env.pet-shop</code>) or
+              run local Anvil with <code>.env.anvil</code>.
+            </p>
+          ) : null}
+          <div className={styles.petGrid}>
+            {petRows.map(({ pet, assetId }) => (
+              <PetCard key={assetId} pet={pet} assetId={assetId} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {!hubAssetsQuery.isLoading && (assetsQuery.data?.length ?? 0) === 0 ? (
+            <p className={styles.status}>No creators available yet.</p>
+          ) : null}
+          <div className={styles.grid}>
+            {(assetsQuery.data ?? []).map((a: IndexerAssetEntity) => {
+              const entry = publicMetaQuery.data?.[a.id.toLowerCase()]
+              return (
+                <CreatorHubCard
+                  key={a.id}
+                  assetAddress={a.id as Address}
+                  creatorName={entry?.name ?? 'Creator'}
+                  avatarUrl={entry?.avatarUrl}
+                  onOpen={() => navigate(`/assets/${a.assetId}`)}
+                />
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }
