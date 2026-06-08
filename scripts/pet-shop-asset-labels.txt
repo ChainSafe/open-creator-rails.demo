@@ -1,0 +1,23 @@
+# One on-chain asset id per pet (must match petCatalog: pet_<slug> on Base Sepolia).
+# Slug order follows public/pets/ roster.
+pet_black_goat
+pet_black_lama
+pet_black_rabbit
+pet_black_sheep
+pet_cow
+pet_dark_brown_goat
+pet_dotted_cat
+pet_dotted_dog
+pet_green_duck
+pet_light_brown_dog
+pet_light_brown_goat
+pet_light_brown_horse
+pet_pig
+pet_read_sheep
+pet_chicken
+pet_white_cat
+pet_white_horse
+pet_white_lama
+pet_white_rabbit
+pet_sheep
+pet_yellow_brid

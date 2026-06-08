@@ -7,6 +7,7 @@ import { useAccount } from 'wagmi'
 import type { PetDefinition } from '../petShop/petCatalog'
 import { useOcrSdk } from '../ocrSdk'
 import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
+import { formatPetShopTimeRemaining } from '../petShop/formatPetShopTime'
 import { SubscribeToAssetButton } from './SubscribeToAssetButton'
 import styles from './PetCard.module.scss'
 
@@ -48,27 +49,36 @@ export function PetCard({ pet, assetId }: Props) {
 
   return (
     <article className={styles.card} style={{ '--pet-accent': pet.accent } as CSSProperties}>
-      <div className={styles.content}>
+      <div className={styles.header}>
         {isActive ? <span className={styles.badge}>In your farm</span> : null}
         <p className={styles.species}>{pet.species}</p>
         <h3 className={styles.name}>{pet.name}</h3>
         <p className={styles.tagline}>{pet.tagline}</p>
-        {subscribable || isActive ? (
-          <div className={styles.subscribe}>
-            {subscribable && assetId ? (
-              <SubscribeToAssetButton assetId={assetId} compact initialDays={1} />
-            ) : null}
-            {isActive ? (
-              <Link to="/pet-shop" className={styles.farmLink}>
-                View in your farm →
-              </Link>
-            ) : null}
-          </div>
-        ) : null}
       </div>
+
       <div className={styles.figure} aria-hidden>
         <img className={styles.portrait} src={pet.image} alt="" />
       </div>
+
+      {isActive ? (
+        <div className={styles.ground}>
+          <div className={styles.subscribedBar}>
+            <span className={styles.subscribedLabel}>Subscribed</span>
+            {statusQuery.data?.endTime != null ? (
+              <span className={styles.subscribedExpiry}>
+                {formatPetShopTimeRemaining(statusQuery.data.endTime)}
+              </span>
+            ) : null}
+          </div>
+          <Link to="/pet-shop" className={styles.farmLink}>
+            View in your farm →
+          </Link>
+        </div>
+      ) : subscribable && assetId ? (
+        <div className={styles.ground}>
+          <SubscribeToAssetButton assetId={assetId} compact />
+        </div>
+      ) : null}
     </article>
   )
 }

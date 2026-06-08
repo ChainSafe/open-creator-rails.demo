@@ -11,6 +11,7 @@ import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { useOcrSdk } from '../ocrSdk'
 import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
 import { erc20PermitAbi } from '../erc20Permit'
+import { erc20PermitVersion } from '../permitDomain'
 import { useToast } from '../toast/useToast'
 import styles from './SubscribeToAssetButton.module.scss'
 
@@ -21,11 +22,18 @@ type Props = {
   /** Stitch-style unlock CTA on creator detail (locked). */
   unlockPanel?: boolean
   creatorName?: string
-  /** Initial days input (pet shop defaults to 1). */
+  /** Initial days input (non–pet-shop compact / full layouts). */
   initialDays?: number
 }
 
 const MONTH_SECONDS = 30n * 24n * 60n * 60n
+const DEFAULT_PET_SHOP_MINUTES = 5
+
+function minutesToPeriodCount(minutes: number, periodSeconds: bigint): bigint {
+  const calendarSeconds = BigInt(Math.max(1, minutes)) * 60n
+  if (periodSeconds <= 0n) return 1n
+  return (calendarSeconds + periodSeconds - 1n) / periodSeconds
+}
 
 export function SubscribeToAssetButton({
   assetId,
@@ -40,7 +48,9 @@ export function SubscribeToAssetButton({
   const { address, isConnected } = useAccount()
   const { data: walletClient } = useWalletClient({ chainId: appConfig.chain.id })
   const publicClient = usePublicClient({ chainId: appConfig.chain.id })
+  const petShopCompact = appConfig.petShopDemo && compact
   const [days, setDays] = useState(initialDays)
+  const [minutes, setMinutes] = useState(DEFAULT_PET_SHOP_MINUTES)
 
   const durationSeconds = useMemo(() => BigInt(Math.max(1, days)) * 24n * 60n * 60n, [days])
 
@@ -79,12 +89,36 @@ export function SubscribeToAssetButton({
     enabled: Boolean(sdk && assetAddressQuery.data),
   })
 
-  const priceQuery = useQuery({
-    queryKey: ['ocr', 'assetPrice', assetAddressQuery.data, durationSeconds.toString()],
+  const periodSecondsQuery = useQuery({
+    queryKey: ['ocr', 'subscriptionPeriod', assetAddressQuery.data],
     queryFn: async () => {
       if (!sdk) throw new Error('SDK not ready')
       if (!assetAddressQuery.data) throw new Error('Missing asset address')
-      const count = await countPeriodsCoveringSeconds(sdk, assetAddressQuery.data, durationSeconds)
+      return sdk.Asset.getSubscriptionDuration({ assetAddress: assetAddressQuery.data })
+    },
+    enabled: Boolean(petShopCompact && sdk && assetAddressQuery.data),
+  })
+
+  const periodSeconds = periodSecondsQuery.data ?? 300n
+
+  const subscriptionCount = useMemo(() => {
+    if (!petShopCompact) return null
+    return minutesToPeriodCount(minutes, periodSeconds)
+  }, [petShopCompact, minutes, periodSeconds])
+
+  const priceQuery = useQuery({
+    queryKey: [
+      'ocr',
+      'assetPrice',
+      assetAddressQuery.data,
+      petShopCompact ? `minutes:${minutes}` : durationSeconds.toString(),
+    ],
+    queryFn: async () => {
+      if (!sdk) throw new Error('SDK not ready')
+      if (!assetAddressQuery.data) throw new Error('Missing asset address')
+      const count =
+        subscriptionCount ??
+        (await countPeriodsCoveringSeconds(sdk, assetAddressQuery.data, durationSeconds))
       return await sdk.Asset.getSubscriptionPrice({ assetAddress: assetAddressQuery.data, count })
     },
     enabled: Boolean(sdk && assetAddressQuery.data),
@@ -145,13 +179,14 @@ export function SubscribeToAssetButton({
       const value = priceQuery.data
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 60)
       const assetAddress = assetAddressQuery.data
-      const count = await countPeriodsCoveringSeconds(sdk, assetAddress, durationSeconds)
+      const count =
+        subscriptionCount ?? (await countPeriodsCoveringSeconds(sdk, assetAddress, durationSeconds))
 
       const signatureHex = await walletClient.signTypedData({
         account: address,
         domain: {
           name: tokenName as string,
-          version: '1',
+          version: erc20PermitVersion(appConfig.chain.id, token),
           chainId: appConfig.chain.id,
           verifyingContract: token,
         },
@@ -309,6 +344,28 @@ export function SubscribeToAssetButton({
             </code>
           </p>
         </>
+      ) : petShopCompact ? (
+        <>
+          <label className={styles.compactDaysLabel}>
+            <span>Min</span>
+            <Input
+              type="number"
+              min={1}
+              step={1}
+              value={minutes}
+              onChange={(e) => setMinutes(Math.max(1, Number(e.target.value) || 1))}
+              size="sm"
+              className={styles.compactDaysInput}
+            />
+          </label>
+          <span className={styles.compactPrice}>
+            {priceQuery.data && tokenMetaQuery.data
+              ? `${formatUnits(priceQuery.data, tokenMetaQuery.data.decimals)} ${tokenMetaQuery.data.name}`
+              : priceQuery.isLoading
+                ? '…'
+                : '—'}
+          </span>
+        </>
       ) : (
         <>
           <label className={styles.compactDaysLabel}>
@@ -347,6 +404,7 @@ export function SubscribeToAssetButton({
           type="button"
           variant="primary"
           size={compact ? 'sm' : 'md'}
+          className={petShopCompact ? styles.compactSubscribe : undefined}
           onClick={() => subscribeMutation.mutate()}
           disabled={
             !sdk ||

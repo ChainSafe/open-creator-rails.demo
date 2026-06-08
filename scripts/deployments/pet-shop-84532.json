@@ -1,0 +1,207 @@
+{
+  "chainId": 84532,
+  "network": "base-sepolia",
+  "startBlock": 42579673,
+  "deployedAt": "2026-06-08T14:24:05Z",
+  "deployer": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887",
+  "paymentToken": {
+    "symbol": "USDC",
+    "address": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "decimals": 6
+  },
+  "registry": "0xe494cA43b9241fb1e003E0902F66f884dd0aFf77",
+  "registryFeeShare": 20,
+  "subscriptionDuration": 300,
+  "periodPrice": 100000,
+  "assets": [
+  {
+    "address": "0xE5671E3aAe8448E3eAc47876801dF870d239Dfbd",
+    "assetId": "pet_black_goat",
+    "assetIdHash": "0x715ebeeee0cdc4da67f276434f45504da4ac30e5f0d96cfa1cb30b2e4a18d050",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0xEC21f4C8340121Da07923e64fCd3F392E8c21027",
+    "assetId": "pet_black_lama",
+    "assetIdHash": "0xe1442698a558fa8a150edf8249e045884ba271c28a2c8d9b9c02afe80df768ef",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x99CCC07eE3242A70E004179CD85C77eEF4bbC63e",
+    "assetId": "pet_black_rabbit",
+    "assetIdHash": "0x5dbf92a846956c8b098b194d5eae07ab9191823ccd0078ff195c188cff470f5b",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x0c2d33949512e34f673AC4D8aa574709Dd489750",
+    "assetId": "pet_black_sheep",
+    "assetIdHash": "0xcd40a7b0533c1cc6272f84a29f41b20d650a4ee906a71748d4741c3993938b62",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0xBd27f490A2e274eaDC1B78bf88AdC364Fda3e833",
+    "assetId": "pet_cow",
+    "assetIdHash": "0xcb899602c70d8c633e9d55823b890d3c5e07cdf509605abf0b89af087cb63d0b",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x9507D0aBb3b4614EdC04fF3ECD9fDcA496285cFA",
+    "assetId": "pet_dark_brown_goat",
+    "assetIdHash": "0x27e374117576af3947b2fe82159091d793432465ad7f51e09ab91e6b7b1ef764",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x1Dc89A1c779e9251d65b6caC32817B5BFFFea4e3",
+    "assetId": "pet_dotted_cat",
+    "assetIdHash": "0xa8b9ee4dd473df90226416f29f9e6e8ad28a70f7e1621cb3b6823234fd31f723",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x48BC4DC4Cf993ec86f90d76f7A6c66ae25482cb4",
+    "assetId": "pet_dotted_dog",
+    "assetIdHash": "0xe30dd642f4d91fb420c6ea70690571a275070ad37327547d601e6f73bad26964",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0xBF80cD3DCE713ebdf32d07F984400936c8375CD2",
+    "assetId": "pet_green_duck",
+    "assetIdHash": "0xc17848ae003c55b87748cc9040d37bb6163b0a6dfce273594f0bc2e2b8947e22",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x1Bf9835b3526674D15461e15dd8d72f3fe1d344A",
+    "assetId": "pet_light_brown_dog",
+    "assetIdHash": "0xc9457bc93a4f51ffb344476cebb81454473bc2b5d998a23acbecb8070080b1c3",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x6Cf84587aC776D6B64919e4947B8Db236fe9e5d1",
+    "assetId": "pet_light_brown_goat",
+    "assetIdHash": "0xcd727c4e2432eb4cc1842f76ac669535cbc0663c1a05d38a7c438cb4230d70cc",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x5CB268F15BAb1c8984F5d8132ad58555f0674FA9",
+    "assetId": "pet_light_brown_horse",
+    "assetIdHash": "0x9ae8823d0ebf4b4bb68b1c770e9a55ddfe7b14d312ddf535b93bac7fb291ed8e",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x75CA791cE1CDBb606c69b56288Dc456Ee8Cf18b7",
+    "assetId": "pet_pig",
+    "assetIdHash": "0xbefe11ae619ed22d29722b095f8e7e6d3585882bd1a15bbced372459790ed93c",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x327b2CaA60997EC53c0e99A0b9f5444603f0D056",
+    "assetId": "pet_read_sheep",
+    "assetIdHash": "0x8b589f8c6243956aaa3ebcdc96e58e74d8551c5e2b573dfc815bf67490c04540",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x2C1AB2B91F126319e9376b4d599a6f66D6aA7341",
+    "assetId": "pet_chicken",
+    "assetIdHash": "0x4505edc11a9a9cf10616d82bfb307a316ff34f3137e8ba83d48cff52e406c07a",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x40A18BfE2f040E9d73DE478Fa1B7625843EEd3C9",
+    "assetId": "pet_white_cat",
+    "assetIdHash": "0xf1dd3557e6f62dd4a70de4c82ad662eae51d31faec3d86305ffeb3af16060b94",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x0c03bF978f26fc6abb341C2973089460C2438668",
+    "assetId": "pet_white_horse",
+    "assetIdHash": "0x61645b4413c819f48c55b8942beb36e5cebf3e0526bf3a142f961033c508df3f",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x0E897e1ddD64a99023e159AC1eBd468AC3e6381E",
+    "assetId": "pet_white_lama",
+    "assetIdHash": "0xda5d03595c6e05a76c509a501e593cc9aaa7ebf408560ecf6f453afc48fe3cf7",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0x96895321a5b5D225606216D32F155B08B506ba0D",
+    "assetId": "pet_white_rabbit",
+    "assetIdHash": "0x918f354cf3b1cede963f3fd9c28f0945824305bf88410360c67c65e9255bcb39",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0xD257CE58887747b614bdCFc69d0e8B048399d1D2",
+    "assetId": "pet_sheep",
+    "assetIdHash": "0x2f9abc7db62d41dc500d0ae03c6eed2c24e487a73aea605c048e345f4895afd5",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  },
+  {
+    "address": "0xfC13BB467c1B9514a322CA6668bF1BA29Dc71B58",
+    "assetId": "pet_yellow_brid",
+    "assetIdHash": "0x7490d3eb07a63e8f530d491253ea43c8f8190050e3e60331749c8fcfd0a89f1b",
+    "subscriptionPrice": 100000,
+    "subscriptionDuration": 300,
+    "tokenAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "owner": "0x55fe6648829FB39Ea9330CBbcF9c9a8428131887"
+  }
+]
+}

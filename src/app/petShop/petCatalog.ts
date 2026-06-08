@@ -122,10 +122,9 @@ const PET_OVERRIDES: Partial<Record<(typeof PET_IMAGE_FILES)[number], PetOverrid
   'yellow_brid.png': { name: 'Pip' },
 }
 
-const BASE_SEPOLIA_LABELS: Record<string, string> = {
-  chicken: 'weather_api',
-  pig: 'stock_data_feed',
-  sheep: 'ai_image_gen',
+/** Base Sepolia deploy script: scripts/deploy-pet-shop-base-sepolia.sh */
+export function baseSepoliaAssetLabel(slug: string): string {
+  return `pet_${slug}`
 }
 
 const ANVIL_LABELS: Record<string, string> = {
@@ -212,11 +211,10 @@ function buildBaseCatalog(): PetDefinition[] {
 const BASE_CATALOG = buildBaseCatalog()
 
 export function petCatalogForChain(chainKey: string): PetDefinition[] {
-  const labels = chainKey === 'anvil' ? ANVIL_LABELS : BASE_SEPOLIA_LABELS
-
   return BASE_CATALOG.map((pet) => ({
     ...pet,
-    assetLabel: labels[pet.slug] ?? pet.assetLabel,
+    assetLabel:
+      chainKey === 'anvil' ? ANVIL_LABELS[pet.slug] : baseSepoliaAssetLabel(pet.slug),
   }))
 }
 
