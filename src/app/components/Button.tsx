@@ -8,6 +8,8 @@ export type ButtonSize = 'sm' | 'md'
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   size?: ButtonSize
+  /** Shows a spinner and sets aria-busy; also disables the button. */
+  loading?: boolean
 }
 
 function cx(...parts: Array<string | false | undefined | null>): string {
@@ -15,7 +17,7 @@ function cx(...parts: Array<string | false | undefined | null>): string {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', className, type = 'button', ...rest },
+  { variant = 'primary', size = 'md', className, type = 'button', loading = false, disabled, children, ...rest },
   ref,
 ) {
   const variantClass =
@@ -26,8 +28,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type={type}
-      className={cx(styles.button, variantClass, sizeClass, className)}
+      className={cx(styles.button, variantClass, sizeClass, loading && styles.loading, className)}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
       {...rest}
-    />
+    >
+      {loading ? <span className={styles.spinner} aria-hidden /> : null}
+      {children}
+    </button>
   )
 })

@@ -210,7 +210,7 @@ export function SubscribeToAssetButton({
       })
 
       const sig = hexToSignature(signatureHex)
-      return sdk.AssetRegistry.subscribe({
+      const txHash = await sdk.AssetRegistry.subscribe({
         assetId,
         subscriberId: DEMO_SUBSCRIBER_ID,
         subscriberAddress: address,
@@ -221,6 +221,9 @@ export function SubscribeToAssetButton({
         r: sig.r,
         s: sig.s,
       })
+
+      await publicClient.waitForTransactionReceipt({ hash: txHash })
+      return txHash
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['ocr', 'subscriptionStatus'] })
@@ -233,6 +236,8 @@ export function SubscribeToAssetButton({
       showToast(message, { variant: 'error' })
     },
   })
+
+  const isSubscribing = subscribeMutation.isPending
 
   const monthlyLabel =
     monthlyPriceQuery.data && tokenMetaQuery.data
@@ -305,11 +310,19 @@ export function SubscribeToAssetButton({
               !assetAddressQuery.data ||
               !tokenAddressQuery.data ||
               !priceQuery.data ||
-              subscribeMutation.isPending
+              isSubscribing
             }
+            aria-busy={isSubscribing || undefined}
             onClick={() => subscribeMutation.mutate()}
           >
-            {subscribeMutation.isPending ? 'Subscribing…' : 'Subscribe to Unlock Access'}
+            {isSubscribing ? (
+              <>
+                <span className={styles.unlockSpinner} aria-hidden />
+                Subscribing…
+              </>
+            ) : (
+              'Subscribe to Unlock Access'
+            )}
           </button>
         )}
       </div>
@@ -357,6 +370,7 @@ export function SubscribeToAssetButton({
               onChange={(e) => setMinutes(Math.max(1, Number(e.target.value) || 1))}
               size="sm"
               className={styles.compactDaysInput}
+              disabled={isSubscribing}
             />
           </label>
           <span className={styles.compactPrice}>
@@ -378,6 +392,7 @@ export function SubscribeToAssetButton({
               onChange={(e) => setDays(Number(e.target.value))}
               size="sm"
               className={styles.compactDaysInput}
+              disabled={isSubscribing}
             />
           </label>
           <span className={styles.compactPrice}>
@@ -406,16 +421,16 @@ export function SubscribeToAssetButton({
           variant="primary"
           size={compact ? 'sm' : 'md'}
           className={petShopCompact ? styles.compactSubscribe : undefined}
+          loading={isSubscribing}
           onClick={() => subscribeMutation.mutate()}
           disabled={
             !sdk ||
             !assetAddressQuery.data ||
             !tokenAddressQuery.data ||
-            !priceQuery.data ||
-            subscribeMutation.isPending
+            !priceQuery.data
           }
         >
-          {subscribeMutation.isPending ? 'Subscribing…' : 'Subscribe'}
+          {isSubscribing ? 'Subscribing…' : 'Subscribe'}
         </Button>
       )}
 

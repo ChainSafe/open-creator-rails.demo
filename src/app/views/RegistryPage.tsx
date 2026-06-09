@@ -57,11 +57,6 @@ export function RegistryPage() {
             <p className={styles.petHubSubtitle}>
               Subscribe on-chain, then visit My Little Farm to watch your animals appear.
             </p>
-            <div className={styles.petHubOrbs} aria-hidden>
-              <span>🐔</span>
-              <span>🐷</span>
-              <span>🐑</span>
-            </div>
           </>
         ) : (
           <>

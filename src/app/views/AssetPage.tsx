@@ -19,6 +19,9 @@ import { Input } from '../components/Input'
 import { SubscribeToAssetButton } from '../components/SubscribeToAssetButton'
 import { appConfig } from '../config'
 import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
+import { formatSubscriptionPeriodLabel } from '../petShop/formatSubscriptionPeriod'
+import { resolvePetByAssetId } from '../petShop/petCatalog'
+import { petShopTerms } from '../petShop/petShopTerminology'
 import { erc20MetadataAbi } from '../erc20Permit'
 import { useOcrSdk } from '../ocrSdk'
 import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
@@ -59,6 +62,7 @@ async function indexerGraphql<T>(
 
 export function AssetPage() {
   const params = useParams<{ assetId: string }>()
+  const petShop = appConfig.petShopDemo
   const sdk = useOcrSdk()
   const qc = useQueryClient()
   const { address } = useAccount()
@@ -352,8 +356,12 @@ export function AssetPage() {
   })
 
   const isSubscribed = Boolean(address && statusQuery.data?.isActive)
+  const pet = assetId && petShop ? resolvePetByAssetId(assetId, appConfig.chainKey) : undefined
   const creatorName =
-    creatorPublicQuery.data?.name ?? gatedContentQuery.data?.name ?? 'Creator'
+    pet?.name ??
+    creatorPublicQuery.data?.name ??
+    gatedContentQuery.data?.name ??
+    (petShop ? 'Animal' : 'Creator')
   const assetAddress = assetAddressQuery.data
   const explorerUrl = assetAddress ? blockExplorerAddressUrl(assetAddress) : null
   const embedUrl = gatedContentQuery.data?.videoUrl
@@ -362,26 +370,36 @@ export function AssetPage() {
 
   const fallbackCoverUrl = assetAddress ? assetCoverImageUrl(assetAddress, 640, 360) : null
   const publicAvatarUrl = creatorPublicQuery.data?.avatarUrl
-  const portraitUrl = publicAvatarUrl ?? fallbackCoverUrl
-  const lockedPreviewUrl = publicAvatarUrl ?? fallbackCoverUrl
+  const portraitUrl = pet?.image ?? publicAvatarUrl ?? fallbackCoverUrl
+  const lockedPreviewUrl = pet?.image ?? publicAvatarUrl ?? fallbackCoverUrl
+  const pageClass = [styles.page, petShop ? styles.pagePetShop : ''].filter(Boolean).join(' ')
+  const farmBtnPrimary = petShop ? styles.farmBtnPrimary : undefined
+  const farmBtnSecondary = petShop ? styles.farmBtnSecondary : undefined
+  const farmInput = petShop ? styles.farmInput : undefined
+  const billingPeriodLabel =
+    subscriptionDurationQuery.data != null
+      ? petShop
+        ? formatSubscriptionPeriodLabel(subscriptionDurationQuery.data)
+        : formatBillingPeriod(subscriptionDurationQuery.data)
+      : '—'
 
   if (assetId === null && params.assetId) {
     return (
-      <div className={styles.page}>
+      <div className={pageClass}>
         <p className={styles.error}>Invalid asset id (must be 0x…)</p>
       </div>
     )
   }
 
   return (
-    <div className={styles.page}>
+    <div className={pageClass}>
       {isSubscribed ? (
         <div className={styles.statusBar} role="status">
           <div className={styles.statusBarLabel}>
             <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
               verified
             </span>
-            Subscription Active
+            {petShop ? 'Rental active' : 'Subscription Active'}
           </div>
         </div>
       ) : null}
@@ -394,7 +412,9 @@ export function AssetPage() {
             </div>
           ) : null}
           <div>
+            {pet ? <p className={styles.petSpecies}>{pet.species}</p> : null}
             <h1 className={styles.creatorTitle}>{creatorName}</h1>
+            {pet ? <p className={styles.petTagline}>{pet.tagline}</p> : null}
             {assetAddress ? (
               explorerUrl ? (
                 <a
@@ -419,11 +439,13 @@ export function AssetPage() {
       </header>
 
       {isAssetOwner && assetAddressQuery.data ? (
-        <details className={styles.ownerDisclosure}>
+        <details className={`${styles.ownerDisclosure} ${petShop ? styles.ownerDisclosurePetShop : ''}`}>
           <summary className={styles.ownerDisclosureSummary}>
-            <span className={styles.ownerBadge}>Creator owner</span>
+            <span className={styles.ownerBadge}>
+              {petShop ? petShopTerms.shepherd : 'Creator owner'}
+            </span>
             <span className={styles.ownerDisclosureAction}>
-              Manage creator
+              {petShop ? petShopTerms.manageAnimal : 'Manage creator'}
               <span
                 className={`material-symbols-outlined ${styles.ownerDisclosureChevron}`}
                 aria-hidden
@@ -435,21 +457,23 @@ export function AssetPage() {
 
           <div className={styles.ownerPanelBody}>
             <p className={styles.ownerSectionLead}>
-              Your wallet is the on-chain owner of this creator asset. Only you can update
-              subscription pricing, transfer ownership, or claim your share of subscriber fees.
+              {petShop
+                ? 'Your wallet shepherds this animal on-chain. You can update rental pricing, transfer shepherd ownership, or claim fees from renters.'
+                : 'Your wallet is the on-chain owner of this creator asset. Only you can update subscription pricing, transfer ownership, or claim your share of subscriber fees.'}
             </p>
 
             <h2 id="owner-section-title" className={styles.ownerPanelTitle}>
-              Update subscription price
+              {petShop ? 'Update rental price' : 'Update subscription price'}
             </h2>
             <p className={styles.ownerHint}>
-              Set how much subscribers pay per calendar day. They choose how many days to buy on
-              subscribe.
+              {petShop
+                ? `Set the daily rental rate. Renters pay in ${billingPeriodLabel === '—' ? 'short' : billingPeriodLabel} periods on-chain based on this rate.`
+                : 'Set how much subscribers pay per calendar day. They choose how many days to buy on subscribe.'}
             </p>
             <div className={styles.ownerForm}>
               <div className={styles.ownerField}>
                 <label className={styles.ownerFieldLabel} htmlFor="owner-asset-price-per-day">
-                  Price per day ({tokenMetaQuery.data?.name ?? 'token'})
+                  {petShop ? 'Rental rate per day' : 'Price per day'} ({tokenMetaQuery.data?.name ?? 'token'})
                 </label>
                 <Input
                   id="owner-asset-price-per-day"
@@ -460,12 +484,14 @@ export function AssetPage() {
                   placeholder="0.00"
                   spellCheck={false}
                   autoComplete="off"
+                  className={farmInput}
                 />
               </div>
               <div className={styles.ownerFormActions}>
                 <Button
                   type="button"
                   variant="primary"
+                  className={farmBtnPrimary}
                   disabled={
                     !sdk ||
                     !walletClient ||
@@ -475,7 +501,11 @@ export function AssetPage() {
                   }
                   onClick={() => updateSubscriptionPriceMutation.mutate()}
                 >
-                  {updateSubscriptionPriceMutation.isPending ? 'Updating…' : 'Update price on-chain'}
+                  {updateSubscriptionPriceMutation.isPending
+                    ? 'Updating…'
+                    : petShop
+                      ? 'Update rental price'
+                      : 'Update price on-chain'}
                 </Button>
               </div>
             </div>
@@ -493,20 +523,23 @@ export function AssetPage() {
             <div className={styles.ownerSubsectionDivider} role="separator" />
 
             <div className={styles.ownerSubsection}>
-              <h2 className={styles.ownerPanelTitle}>Transfer creator owner</h2>
+              <h2 className={styles.ownerPanelTitle}>
+                {petShop ? `Transfer ${petShopTerms.shepherd.toLowerCase()}` : 'Transfer creator owner'}
+              </h2>
               <p className={styles.ownerHint}>
-                Assign on-chain ownership to another wallet. The new owner can update price and
-                claim fees; you will lose owner controls after the transaction confirms.
+                {petShop
+                  ? 'Assign shepherd ownership to another wallet. The new shepherd can update rental price and claim fees; you lose those controls after the transaction confirms.'
+                  : 'Assign on-chain ownership to another wallet. The new owner can update price and claim fees; you will lose owner controls after the transaction confirms.'}
               </p>
               {ownerQuery.data ? (
                 <p className={styles.ownerCurrent}>
-                  Current owner: <code>{ownerQuery.data}</code>
+                  {petShop ? 'Current shepherd:' : 'Current owner:'} <code>{ownerQuery.data}</code>
                 </p>
               ) : null}
               <div className={styles.ownerForm}>
                 <div className={styles.ownerField}>
                   <label className={styles.ownerFieldLabel} htmlFor="owner-asset-new-owner">
-                    New owner address
+                    {petShop ? 'New shepherd wallet' : 'New owner address'}
                   </label>
                   <Input
                     id="owner-asset-new-owner"
@@ -516,12 +549,14 @@ export function AssetPage() {
                     placeholder="0x…"
                     spellCheck={false}
                     autoComplete="off"
+                    className={farmInput}
                   />
                 </div>
                 <div className={styles.ownerFormActions}>
                   <Button
                     type="button"
                     variant="secondary"
+                    className={farmBtnSecondary}
                     disabled={
                       !sdk ||
                       !walletClient ||
@@ -530,7 +565,11 @@ export function AssetPage() {
                     }
                     onClick={() => transferOwnershipMutation.mutate()}
                   >
-                    {transferOwnershipMutation.isPending ? 'Transferring…' : 'Transfer ownership on-chain'}
+                    {transferOwnershipMutation.isPending
+                      ? 'Transferring…'
+                      : petShop
+                        ? 'Transfer shepherd on-chain'
+                        : 'Transfer ownership on-chain'}
                   </Button>
                 </div>
               </div>
@@ -549,15 +588,15 @@ export function AssetPage() {
             <div className={styles.ownerSubsectionDivider} role="separator" />
 
             <div className={styles.ownerSubsection}>
-              <h2 className={styles.ownerPanelTitle}>Claim creator fees</h2>
+              <h2 className={styles.ownerPanelTitle}>
+                {petShop ? 'Claim rental fees' : 'Claim creator fees'}
+              </h2>
               <p className={styles.ownerHint}>
-                Billing period:{' '}
-                {subscriptionDurationQuery.isLoading
-                  ? 'Loading…'
-                  : subscriptionDurationQuery.data != null
-                    ? formatBillingPeriod(subscriptionDurationQuery.data)
-                    : '—'}
-                . Creator fees unlock after each full period has elapsed.
+                {petShop ? 'Rental period' : 'Billing period'}:{' '}
+                {subscriptionDurationQuery.isLoading ? 'Loading…' : billingPeriodLabel}.{' '}
+                {petShop
+                  ? 'Your share unlocks after each full rental period has elapsed.'
+                  : 'Creator fees unlock after each full period has elapsed.'}
               </p>
               {assetSubscribersQuery.isLoading ? (
                 <p className={styles.loading}>Loading subscribers…</p>
@@ -566,7 +605,11 @@ export function AssetPage() {
                   {(assetSubscribersQuery.error as Error).message}
                 </p>
               ) : (assetSubscribersQuery.data ?? []).length === 0 ? (
-                <p className={styles.ownerEmpty}>No subscribers indexed for this creator yet.</p>
+                <p className={styles.ownerEmpty}>
+                  {petShop
+                    ? 'No renters indexed for this animal yet.'
+                    : 'No subscribers indexed for this creator yet.'}
+                </p>
               ) : (
                 <ul className={styles.subscriberClaimList}>
                   {(assetSubscribersQuery.data ?? []).map((row) => {
@@ -581,6 +624,7 @@ export function AssetPage() {
                           type="button"
                           size="sm"
                           variant="secondary"
+                          className={farmBtnSecondary}
                           disabled={!sdk || !walletClient || claimCreatorFeesMutation.isPending}
                           onClick={() => claimCreatorFeesMutation.mutate([row.subscriber])}
                         >
@@ -685,7 +729,7 @@ export function AssetPage() {
           </div>
           <div className={styles.lockOverlay}>
             {assetId ? (
-              appConfig.petShopDemo ? (
+              petShop ? (
                 <div className={styles.petShopSubscribeWrap}>
                   <p className={styles.petShopSubscribeLead}>
                     Subscribe to add <strong>{creatorName}</strong> to your farm.

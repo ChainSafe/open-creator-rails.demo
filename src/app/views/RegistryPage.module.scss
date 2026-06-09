@@ -98,29 +98,6 @@
   max-width: 36ch;
 }
 
-.petHubOrbs {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  gap: 8px;
-  font-size: clamp(2rem, 6vw, 3.25rem);
-  opacity: 0.92;
-  filter: drop-shadow(0 12px 20px rgba(27, 46, 31, 0.15));
-
-  span:nth-child(2) {
-    transform: translateY(8px) scale(1.08);
-  }
-
-  @media (max-width: 640px) {
-    position: static;
-    transform: none;
-    margin-top: 20px;
-    justify-content: flex-start;
-  }
-}
-
 .petGrid {
   display: grid;
   grid-template-columns: 1fr;

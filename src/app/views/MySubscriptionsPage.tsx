@@ -141,11 +141,6 @@ export function MySubscriptionsPage() {
           <p className={hubStyles.petHubSubtitle}>
             Pets you&apos;ve rented on-chain. Active ones are visiting your farm.
           </p>
-          <div className={hubStyles.petHubOrbs} aria-hidden>
-            <span>🐐</span>
-            <span>🐑</span>
-            <span>🐔</span>
-          </div>
         </header>
 
         {!address ? (

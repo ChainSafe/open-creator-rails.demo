@@ -539,4 +539,226 @@
   color: var(--error);
 }
 
+/* ── Pet shop / farm asset page ───────────────────────────── */
+
+.pagePetShop {
+  max-width: 1080px;
+
+  .statusBar {
+    margin-bottom: 24px;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(149, 213, 178, 0.6);
+    border-left: none;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: var(--farm-shadow-soft, 0 12px 32px rgba(27, 46, 31, 0.08));
+    backdrop-filter: none;
+  }
+
+  .statusBarLabel {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #1b4332;
+  }
+
+  .creatorHeader {
+    margin-bottom: 28px;
+    padding: 20px 22px;
+    border-radius: var(--farm-radius-lg, 28px);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.45)),
+      linear-gradient(160deg, #b7e4c7 0%, #d8f3dc 40%, #95d5b2 100%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow: var(--farm-shadow-soft, 0 12px 32px rgba(27, 46, 31, 0.08));
+  }
+
+  .portraitFrame {
+    width: 132px;
+    height: 132px;
+    padding: 10px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 12px 28px rgba(27, 46, 31, 0.1);
+  }
+
+  .portrait {
+    object-fit: contain;
+    border-radius: 14px;
+    background: transparent;
+  }
+
+  .petSpecies {
+    margin: 0 0 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #74a57f;
+  }
+
+  .creatorTitle {
+    font-size: clamp(1.75rem, 4vw, 2.25rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: #1b2e1f;
+    margin: 0 0 6px;
+  }
+
+  .petTagline {
+    margin: 0 0 8px;
+    max-width: 36ch;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #4a6350;
+  }
+
+  .assetLink,
+  .assetAddressPlain {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: #40916c;
+  }
+
+  .ownerDisclosureSummary {
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(183, 228, 199, 0.35), rgba(255, 255, 255, 0.55));
+    border-bottom-color: rgba(45, 106, 79, 0.12);
+  }
+
+  .ownerBadge {
+    color: #1b4332;
+    background: rgba(149, 213, 178, 0.45);
+    border-color: rgba(45, 106, 79, 0.2);
+    font-family: var(--sans);
+
+    &::before {
+      background: #40916c;
+    }
+  }
+
+  .ownerDisclosureAction {
+    font-weight: 700;
+    color: #2d6a4f;
+  }
+
+  .ownerPanelBody {
+    padding: 20px 24px 24px;
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .ownerSectionLead,
+  .ownerHint,
+  .ownerCurrent,
+  .ownerEmpty,
+  .ownerSuccess {
+    font-family: var(--sans);
+    color: #5c7362;
+  }
+
+  .ownerPanelTitle {
+    font-family: var(--heading);
+    font-weight: 800;
+    color: #1b2e1f;
+  }
+
+  .ownerFieldLabel {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4a6350;
+  }
+
+  .ownerSubsectionDivider {
+    border-top-color: rgba(45, 106, 79, 0.12);
+  }
+
+  .subscriberClaimRow {
+    border-radius: 14px;
+    border-color: rgba(45, 106, 79, 0.14);
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .subscriberClaimPayer {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: #2d6a4f;
+  }
+
+  .ownerPanelFooter {
+    border-top-color: rgba(45, 106, 79, 0.12);
+  }
+
+  .ownerHistoryLink {
+    font-weight: 700;
+    color: #2d6a4f;
+  }
+
+  .petShopSubscribeWrap {
+    border-radius: var(--farm-radius-md, 20px);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+  }
+}
+
+.ownerDisclosure.ownerDisclosurePetShop {
+  border-radius: var(--farm-radius-lg, 28px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: var(--farm-shadow-soft, 0 12px 32px rgba(27, 46, 31, 0.08));
+  backdrop-filter: none;
+}
+
+.farmInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(45, 106, 79, 0.18) !important;
+  border-radius: 12px !important;
+  color: #1b2e1f !important;
+
+  &::placeholder {
+    color: rgba(74, 99, 80, 0.55) !important;
+  }
+
+  &:focus-visible {
+    border-color: #40916c !important;
+    box-shadow: 0 0 0 2px rgba(64, 145, 108, 0.2) !important;
+  }
+}
+
+.farmBtnPrimary {
+  border-radius: 999px !important;
+  border: none !important;
+  color: #fff !important;
+  background: linear-gradient(180deg, #40916c, #2d6a4f) !important;
+  box-shadow: 0 8px 20px rgba(45, 106, 79, 0.25);
+
+  &:not(:disabled):hover {
+    filter: brightness(1.05);
+    background: linear-gradient(180deg, #40916c, #2d6a4f) !important;
+  }
+}
+
+.farmBtnSecondary {
+  border-radius: 999px !important;
+  border: 1px solid rgba(45, 106, 79, 0.2) !important;
+  color: #2d6a4f !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+
+  &:not(:disabled):hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: #40916c !important;
+    color: #1b4332 !important;
+  }
+}
+
+.petSpecies {
+  margin: 0;
+}
+
+.petTagline {
+  margin: 0;
+}
 

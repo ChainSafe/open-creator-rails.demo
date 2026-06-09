@@ -15,6 +15,7 @@ export const petShopTerms = {
   registerAnimal: 'Register animal',
   yourAnimals: 'Your animals',
   addAnimal: 'Add animal',
+  manageAnimal: 'Manage animal',
 } as const
 
 export function adminConsoleSubtitle(isRegistryOwner: boolean): string {

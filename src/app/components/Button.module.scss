@@ -22,6 +22,11 @@
     cursor: not-allowed;
   }
 
+  &.loading:disabled {
+    opacity: 1;
+    cursor: wait;
+  }
+
   &:not(:disabled):active {
     transform: scale(0.95);
   }
@@ -65,5 +70,21 @@
 
   &:not(:disabled):hover {
     background: rgba(147, 0, 10, 0.8);
+  }
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: buttonSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes buttonSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
