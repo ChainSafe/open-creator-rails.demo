@@ -6,14 +6,17 @@ import { isAddress, keccak256, parseUnits, stringToHex, type Address } from 'vie
 import { useAccount, usePublicClient } from 'wagmi'
 
 import { CreatorHubCard } from '../components/CreatorHubCard'
+import { PetAdminCard } from '../components/PetAdminCard'
 import type { CreatorPublicMeta } from '../creatorProfile'
 import { appConfig } from '../config'
+import { resolvePetByAssetId } from '../petShop/petCatalog'
 
 const DEMO_ASSET_OWNER_ADDRESS = appConfig.demoTransferOwnerAddress ?? ''
 import { fetchCreatorPublicMeta } from '../demoServicesClient'
 import { createDemoIndexer } from '../indexerClient'
 import { useOcrSdk } from '../ocrSdk'
 import { erc20MetadataAbi } from '../erc20Permit'
+import { adminConsoleSubtitle, petShopTerms } from '../petShop/petShopTerminology'
 import hubStyles from './RegistryPage.module.scss'
 import styles from './CreatorConsole.module.scss'
 
@@ -51,6 +54,7 @@ function fillDemoCreatorForm(setters: {
 
 export function CreatorConsole() {
   const navigate = useNavigate()
+  const petShop = appConfig.petShopDemo
   const sdk = useOcrSdk()
   const qc = useQueryClient()
   const publicClient = usePublicClient()
@@ -140,7 +144,9 @@ export function CreatorConsole() {
   const createServiceMutation = useMutation({
     mutationFn: async () => {
       if (!sdk) throw new Error('SDK not ready')
-      if (!newCreatorName.trim()) throw new Error('Creator name is required')
+      if (!newCreatorName.trim()) {
+        throw new Error(petShop ? 'Animal name is required' : 'Creator name is required')
+      }
 
       const tokenMeta = demoTokenMetaQuery.data
       if (!tokenMeta) throw new Error('Token metadata not loaded')
@@ -250,28 +256,53 @@ export function CreatorConsole() {
     )
   }
 
+  const rootClass = [
+    hubStyles.page,
+    styles.root,
+    petShop ? styles.rootPetShop : '',
+    petShop ? hubStyles.pagePetHub : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className={`${hubStyles.page} ${styles.root}`}>
-      <header className={styles.pageHeader}>
-        <h1 className={hubStyles.pageTitle}>Admin Console</h1>
-        <p className={styles.pageSubtitle}>
-          Registry administration for deploying creators and managing assets you own.
-        </p>
+    <div className={rootClass}>
+      <header className={petShop ? styles.petPageHero : styles.pageHeader}>
+        {petShop ? (
+          <>
+            <p className={styles.petKicker}>Admin Console</p>
+            <h1 className={styles.petTitle}>
+              {isRegistryOwner ? 'Farm hub operations' : petShopTerms.yourAnimals}
+            </h1>
+            <p className={styles.petSubtitle}>{adminConsoleSubtitle(isRegistryOwner)}</p>
+          </>
+        ) : (
+          <>
+            <h1 className={hubStyles.pageTitle}>Admin Console</h1>
+            <p className={styles.pageSubtitle}>
+              Registry administration for deploying creators and managing assets you own.
+            </p>
+          </>
+        )}
       </header>
 
       {isRegistryOwner ? (
-        <section className={styles.addSection} aria-labelledby="add-creator-heading">
+        <section
+          className={petShop ? styles.addSectionPetShop : styles.addSection}
+          aria-labelledby="add-creator-heading"
+        >
           <div className={styles.addSectionIntro}>
             <div className={styles.addSectionHeadingRow}>
               <h2 id="add-creator-heading" className={styles.sectionTitle}>
                 <span className={`material-symbols-outlined ${styles.sectionIcon}`}>add_circle</span>
-                Add Creator
+                {petShop ? petShopTerms.registerAnimal : 'Add Creator'}
               </h2>
-              <span className={styles.registryOwnerBadge}>Registry owner</span>
+              <span className={styles.registryOwnerBadge}>Hub admin · registry owner</span>
             </div>
             <p className={styles.addSectionLead}>
-              Your wallet controls the asset registry. Deploy new creators on-chain and register
-              their public and gated metadata.
+              {petShop
+                ? 'Deploy a new animal on the farm hub and assign a shepherd wallet as the asset owner.'
+                : 'Your wallet controls the asset registry. Deploy new creators on-chain and register their public and gated metadata.'}
             </p>
           </div>
           <div className={styles.addSectionActions}>
@@ -282,7 +313,7 @@ export function CreatorConsole() {
               disabled={!sdk}
             >
               <span className="material-symbols-outlined">add</span>
-              Add Creator
+              {petShop ? petShopTerms.addAnimal : 'Add Creator'}
             </button>
           </div>
           {deployFlowActive ? (
@@ -291,13 +322,15 @@ export function CreatorConsole() {
               <div className={styles.deployProgressText}>
                 <span className={styles.deployProgressTitle}>
                   {createServiceMutation.isPending
-                    ? 'Adding creator…'
-                    : 'Syncing your new creator…'}
+                    ? petShop ? 'Registering animal…' : 'Adding creator…'
+                    : petShop ? 'Syncing new animal…' : 'Syncing your new creator…'}
                 </span>
                 <span className={styles.deployProgressSubtitle}>
                   {createServiceMutation.isPending
                     ? 'Confirm the transaction in your wallet. This can take a moment.'
-                    : 'Waiting for the indexer; your creator will appear under Manage Creators when ready.'}
+                    : petShop
+                      ? `Waiting for the indexer; the animal will appear under ${petShopTerms.yourAnimals} when ready.`
+                      : 'Waiting for the indexer; your creator will appear under Manage Creators when ready.'}
                 </span>
               </div>
             </div>
@@ -305,32 +338,59 @@ export function CreatorConsole() {
         </section>
       ) : null}
 
-      <div className={styles.sectionHeader}>
-        <h2 className={styles.sectionTitle}>
-          <span className={`material-symbols-outlined ${styles.sectionIcon}`}>terminal</span>
-          Manage Creators
+      <div className={petShop ? styles.petSectionHeader : styles.sectionHeader}>
+        <h2 className={petShop ? styles.petSectionTitle : styles.sectionTitle}>
+          {!petShop ? (
+            <span className={`material-symbols-outlined ${styles.sectionIcon}`}>terminal</span>
+          ) : null}
+          {petShop ? petShopTerms.yourAnimals : 'Manage Creators'}
         </h2>
         {myAssets.length > 0 && (
-          <span className={styles.routeCount}>{myAssets.length} Creator{myAssets.length !== 1 ? 's' : ''}</span>
+          <span className={petShop ? styles.petRouteCount : styles.routeCount}>
+            {myAssets.length} {petShop ? 'animal' : 'Creator'}
+            {myAssets.length !== 1 ? 's' : ''}
+          </span>
         )}
       </div>
 
       {assetsQuery.isLoading ? (
-        <p className={hubStyles.status}>Loading creators…</p>
+        <p className={hubStyles.status}>{petShop ? 'Loading animals…' : 'Loading creators…'}</p>
       ) : myAssets.length === 0 ? (
-        <p className={hubStyles.status}>No creators found. Add your first creator to get started.</p>
+        <p className={hubStyles.status}>
+          {petShop
+            ? isRegistryOwner
+              ? 'No animals assigned to you yet. Register one on the hub or ask the hub admin.'
+              : 'No animals on this wallet. The hub admin registers animals and assigns shepherd wallets as owners.'
+            : 'No creators found. Add your first creator to get started.'}
+        </p>
       ) : (
-        <div className={hubStyles.grid}>
-          {myAssets.map((a) => (
-            <CreatorHubCard
-              key={a.id}
-              assetAddress={a.id}
-              creatorName={publicMetaQuery.data?.[a.id.toLowerCase()]?.name ?? 'Creator'}
-              avatarUrl={publicMetaQuery.data?.[a.id.toLowerCase()]?.avatarUrl}
-              variant="admin"
-              onOpen={() => navigate(`/assets/${a.assetId}`)}
-            />
-          ))}
+        <div className={petShop ? hubStyles.petGrid : hubStyles.grid}>
+          {myAssets.map((a) => {
+            if (petShop) {
+              const pet = resolvePetByAssetId(a.assetId, appConfig.chainKey)
+              if (pet) {
+                return (
+                  <PetAdminCard
+                    key={a.id}
+                    pet={pet}
+                    assetAddress={a.id}
+                    onManage={() => navigate(`/assets/${a.assetId}`)}
+                  />
+                )
+              }
+            }
+
+            return (
+              <CreatorHubCard
+                key={a.id}
+                assetAddress={a.id}
+                creatorName={publicMetaQuery.data?.[a.id.toLowerCase()]?.name ?? (petShop ? 'Animal' : 'Creator')}
+                avatarUrl={publicMetaQuery.data?.[a.id.toLowerCase()]?.avatarUrl}
+                variant="admin"
+                onOpen={() => navigate(`/assets/${a.assetId}`)}
+              />
+            )
+          })}
         </div>
       )}
 
@@ -342,7 +402,7 @@ export function CreatorConsole() {
                 <div className={styles.modalHeaderIcon}>
                   <span className="material-symbols-outlined">rocket_launch</span>
                 </div>
-                <h2>Add Creator</h2>
+                <h2>{petShop ? petShopTerms.registerAnimal : 'Add Creator'}</h2>
               </div>
               <button type="button" className={styles.modalClose} onClick={() => setModalOpen(false)}>
                 <span className="material-symbols-outlined">close</span>
@@ -378,22 +438,28 @@ export function CreatorConsole() {
                       Public
                     </span>
                     <p className={styles.groupHint}>
-                      Visible on the Creators Hub and creator page before subscribing.
+                      {petShop
+                        ? `Shown on ${petShopTerms.hubNav} before someone rents this animal.`
+                        : 'Visible on the Creators Hub and creator page before subscribing.'}
                     </p>
                     <div className={styles.formFieldsStack}>
                       <div className={styles.formField}>
-                        <label className={styles.formFieldLabel}>Creator name</label>
+                        <label className={styles.formFieldLabel}>
+                          {petShop ? 'Animal name' : 'Creator name'}
+                        </label>
                         <input
                           className={styles.formInput}
                           value={newCreatorName}
                           onChange={(e) => setNewCreatorName(e.target.value)}
-                          placeholder="e.g., Alice Creator"
+                          placeholder={petShop ? 'e.g., Bramble the Goat' : 'e.g., Alice Creator'}
                           spellCheck={false}
                           autoComplete="off"
                         />
                       </div>
                       <div className={styles.formField}>
-                        <label className={styles.formFieldLabel}>Creator avatar URL</label>
+                        <label className={styles.formFieldLabel}>
+                          {petShop ? 'Animal image URL' : 'Creator avatar URL'}
+                        </label>
                         <input
                           className={styles.formInput}
                           value={newAvatarUrl}
@@ -479,14 +545,16 @@ export function CreatorConsole() {
                   <div className={styles.formSection}>
                     <span className={styles.pricingGroupLabel}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>badge</span>
-                      Asset owner
+                      {petShop ? petShopTerms.shepherd : 'Asset owner'}
                     </span>
                     <p className={styles.groupHint}>
-                      Can update price, claim fees, and transfer ownership. Empty = registry owner.
+                      {petShop
+                        ? 'Shepherd wallet that owns this animal on-chain — can set price, claim fees, and transfer ownership. Empty = hub admin (registry owner).'
+                        : 'Can update price, claim fees, and transfer ownership. Empty = registry owner.'}
                     </p>
                     <div className={styles.formField}>
                       <label className={styles.formFieldLabel} htmlFor="new-creator-owner">
-                        Owner wallet address
+                        {petShop ? 'Shepherd wallet address' : 'Owner wallet address'}
                       </label>
                       <input
                         id="new-creator-owner"
@@ -511,7 +579,7 @@ export function CreatorConsole() {
                     onClick={() => createServiceMutation.mutate()}
                     disabled={!sdk || createServiceMutation.isPending || !demoTokenMetaQuery.data}
                   >
-                    {createServiceMutation.isPending ? 'Adding…' : 'Add Creator'}
+                    {createServiceMutation.isPending ? 'Registering…' : petShop ? petShopTerms.registerAnimal : 'Add Creator'}
                     <span className="material-symbols-outlined" style={{ fontSize: 20 }}>send</span>
                   </button>
                 </div>

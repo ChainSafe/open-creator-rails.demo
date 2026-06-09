@@ -5,6 +5,158 @@
   box-sizing: border-box;
 }
 
+.rootPetShop {
+  max-width: 100%;
+}
+
+/* Pet-shop page chrome (matches Rent-A-Pet / My Little Farm) */
+.petPageHero {
+  position: relative;
+  margin-bottom: 28px;
+  padding: 28px 24px 32px;
+  border-radius: var(--farm-radius-lg, 28px);
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.45)),
+    linear-gradient(160deg, #b7e4c7 0%, #d8f3dc 40%, #95d5b2 100%);
+  box-shadow: var(--farm-shadow, 0 20px 50px rgba(27, 46, 31, 0.12));
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.petKicker {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #2d6a4f;
+}
+
+.petTitle {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #1b2e1f;
+}
+
+.petSubtitle {
+  margin: 12px 0 0;
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  color: #4a6350;
+  max-width: 42rem;
+}
+
+.petSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+.petSectionTitle {
+  margin: 0;
+  font-family: var(--heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1b2e1f;
+}
+
+.petRouteCount {
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1b4332;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  padding: 6px 14px;
+  border-radius: 999px;
+  box-shadow: var(--farm-shadow-soft, 0 12px 32px rgba(27, 46, 31, 0.08));
+}
+
+.addSectionPetShop {
+  margin-bottom: 32px;
+  border-radius: var(--farm-radius-lg, 28px);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--farm-shadow-soft, 0 12px 32px rgba(27, 46, 31, 0.08));
+
+  .addSectionIntro {
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(45, 106, 79, 0.12);
+    background: transparent;
+  }
+
+  .addSectionHeadingRow {
+    margin-bottom: 10px;
+  }
+
+  .sectionTitle {
+    font-family: var(--heading);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1b2e1f;
+  }
+
+  .sectionIcon {
+    color: #40916c;
+  }
+
+  .registryOwnerBadge {
+    font-family: var(--sans);
+    color: #2d6a4f;
+    background: rgba(149, 213, 178, 0.35);
+    border-color: rgba(45, 106, 79, 0.2);
+
+    &::before {
+      background: #40916c;
+    }
+  }
+
+  .addSectionLead {
+    font-family: var(--sans);
+    color: #4a6350;
+  }
+
+  .addSectionActions {
+    padding: 16px 24px 20px;
+  }
+
+  .registerBtn {
+    font-family: var(--sans);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #40916c, #2d6a4f);
+    box-shadow: 0 8px 20px rgba(45, 106, 79, 0.25);
+
+    &:hover {
+      filter: brightness(1.05);
+      background: linear-gradient(180deg, #40916c, #2d6a4f);
+    }
+  }
+
+  .deployProgressStrip {
+    margin: 0 24px 20px;
+    border-radius: 16px;
+    border-color: rgba(45, 106, 79, 0.14);
+    background: rgba(255, 255, 255, 0.55);
+  }
+
+  .deployProgressTitle {
+    color: #1b2e1f;
+  }
+
+  .deployProgressSubtitle {
+    color: #4a6350;
+  }
+}
+
 /* Page Header */
 .pageHeader {
   margin-bottom: 48px;
