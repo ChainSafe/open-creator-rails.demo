@@ -98,7 +98,7 @@ export function AppLayout() {
               <div className={styles.navGroup}>
                 <TopLink to="/" label="Rent-A-Pet" />
                 {appConfig.petShopDemo ? <TopLink to="/pet-shop" label="My Little Farm" /> : null}
-                <TopLink to="/subscriptions" label="My furry Friends" />
+                <TopLink to="/subscriptions" label="My Furry Friends" />
                 {showCreatorNav ? <TopLink to="/creator-console" label="Admin Console" /> : null}
               </div>
             </div>

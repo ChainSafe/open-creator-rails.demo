@@ -32,3 +32,6 @@ dist-ssr
 
 # Local mock API runtime registry (Creator Console registrations)
 mock-api/services.json
+
+# Unity WebGL local secrets (use secrets.json.example as template)
+public/pet-shop-player/StreamingAssets/secrets.json

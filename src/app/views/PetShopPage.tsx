@@ -18,17 +18,17 @@ export function PetShopPage() {
       <header className={styles.header}>
         <div>
           <p className={styles.kicker}>Your farm</p>
-          <h1 className={styles.title}>Pet Shop</h1>
+          <h1 className={styles.title}>All My Furries</h1>
           <p className={styles.subtitle}>
             Active subscriptions appear here. Adopt pets in{' '}
-            <Link to="/">Creators Hub</Link>.
+            <Link to="/">Rent-A-Pet</Link>.
           </p>
         </div>
         {address ? (
           <p className={styles.summary}>
             {activeCount > 0
               ? `${activeCount} pet${activeCount === 1 ? '' : 's'} visiting`
-              : 'No active pets — subscribe in Creators Hub'}
+              : 'No active pets — subscribe in Rent-A-Pet'}
           </p>
         ) : (
           <p className={styles.summary}>Connect a wallet to see your farm.</p>

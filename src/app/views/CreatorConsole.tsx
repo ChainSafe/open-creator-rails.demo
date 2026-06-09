@@ -395,12 +395,15 @@ export function CreatorConsole() {
       )}
 
       {isRegistryOwner && modalOpen && (
-        <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false) }}>
+        <div
+          className={`${styles.modalOverlay} ${petShop ? styles.modalPetShop : ''}`}
+          onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false) }}
+        >
           <div className={styles.modalPanel}>
             <div className={styles.modalHeader}>
               <div className={styles.modalHeaderTitle}>
                 <div className={styles.modalHeaderIcon}>
-                  <span className="material-symbols-outlined">rocket_launch</span>
+                  <span className="material-symbols-outlined">{petShop ? 'pets' : 'rocket_launch'}</span>
                 </div>
                 <h2>{petShop ? petShopTerms.registerAnimal : 'Add Creator'}</h2>
               </div>
@@ -475,10 +478,12 @@ export function CreatorConsole() {
                   <div className={styles.formSection}>
                     <span className={styles.pricingGroupLabel}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>lock</span>
-                      Private (subscriber-only)
+                      {petShop ? 'Renter extras' : 'Private (subscriber-only)'}
                     </span>
                     <p className={styles.groupHint}>
-                      Unlocked after subscription: video, content image, and article.
+                      {petShop
+                        ? 'Optional extras renters see after subscribing — farm notes, photos, or care tips.'
+                        : 'Unlocked after subscription: video, content image, and article.'}
                     </p>
                     <div className={styles.formFieldsStack}>
                       <div className={styles.formField}>
@@ -526,7 +531,9 @@ export function CreatorConsole() {
                     <div className={styles.formFieldsStack}>
                       <div className={styles.formField}>
                         <label className={styles.formFieldLabel}>
-                          Price per day ({demoTokenMetaQuery.data?.name ?? 'token'})
+                          {petShop
+                            ? `Rental rate per day (${demoTokenMetaQuery.data?.name ?? 'token'})`
+                            : `Price per day (${demoTokenMetaQuery.data?.name ?? 'token'})`}
                         </label>
                         <input
                           className={styles.formInput}

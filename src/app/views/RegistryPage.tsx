@@ -52,10 +52,10 @@ export function RegistryPage() {
       <header className={petShop ? styles.petHubHero : styles.pageHeader}>
         {petShop ? (
           <>
-            <p className={styles.petHubKicker}>Creators Hub</p>
+            <p className={styles.petHubKicker}>Rent-A-Pet</p>
             <h1 className={styles.petHubTitle}>Adopt a farm friend</h1>
             <p className={styles.petHubSubtitle}>
-              Subscribe on-chain, then visit Pet Shop to watch your animals appear.
+              Subscribe on-chain, then visit My Little Farm to watch your animals appear.
             </p>
             <div className={styles.petHubOrbs} aria-hidden>
               <span>🐔</span>

@@ -137,7 +137,7 @@ export function MySubscriptionsPage() {
       <div className={`${hubStyles.page} ${hubStyles.pagePetHub}`}>
         <header className={hubStyles.petHubHero}>
           <p className={hubStyles.petHubKicker}>Subscriptions</p>
-          <h1 className={hubStyles.petHubTitle}>My furry friends</h1>
+          <h1 className={hubStyles.petHubTitle}>My Furry Friends</h1>
           <p className={hubStyles.petHubSubtitle}>
             Pets you&apos;ve rented on-chain. Active ones are visiting your farm.
           </p>

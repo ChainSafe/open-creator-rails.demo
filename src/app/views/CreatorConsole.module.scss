@@ -693,3 +693,154 @@
   border: 1px solid rgba(225, 29, 72, 0.3);
   color: #e11d48;
 }
+
+/* Pet-shop register modal — farm glass skin */
+.modalPetShop {
+  background: rgba(27, 46, 31, 0.28);
+  backdrop-filter: blur(10px);
+
+  .modalPanel {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.97) 0%, rgba(248, 252, 249, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: var(--farm-radius-lg, 28px);
+    box-shadow: var(--farm-shadow, 0 28px 60px rgba(27, 46, 31, 0.18));
+  }
+
+  .modalHeader {
+    padding: 22px 24px;
+    border-bottom: 1px solid rgba(45, 106, 79, 0.12);
+    background: linear-gradient(135deg, rgba(183, 228, 199, 0.35), rgba(255, 255, 255, 0.5));
+  }
+
+  .modalHeaderTitle h2 {
+    margin: 0;
+    font-family: var(--heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #1b2e1f;
+  }
+
+  .modalHeaderIcon {
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(149, 213, 178, 0.45);
+    border: 1px solid rgba(45, 106, 79, 0.15);
+    color: #2d6a4f;
+  }
+
+  .modalClose {
+    border-radius: 999px;
+    color: #4a6350;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.85);
+      color: #1b2e1f;
+    }
+  }
+
+  .modalBody {
+    padding: 20px 24px 24px;
+    background: transparent;
+  }
+
+  .demoFillBtn {
+    border-color: rgba(45, 106, 79, 0.25);
+    border-radius: 999px;
+    color: #4a6350;
+    background: rgba(255, 255, 255, 0.55);
+
+    &:hover {
+      border-color: #40916c;
+      color: #2d6a4f;
+      background: rgba(183, 228, 199, 0.35);
+    }
+  }
+
+  .formSection {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(45, 106, 79, 0.12);
+    border-radius: var(--farm-radius-md, 20px);
+    padding: 16px 18px;
+  }
+
+  .pricingGroupLabel {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: #40916c;
+    margin-bottom: 6px;
+  }
+
+  .groupHint {
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.45;
+    color: #5c7362;
+  }
+
+  .formFieldLabel {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #4a6350;
+    text-transform: none;
+  }
+
+  .formInput {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(45, 106, 79, 0.18);
+    border-radius: 12px;
+    color: #1b2e1f;
+
+    &::placeholder {
+      color: rgba(74, 99, 80, 0.55);
+    }
+
+    &:focus {
+      border-color: #40916c;
+      box-shadow: 0 0 0 2px rgba(64, 145, 108, 0.2);
+    }
+  }
+
+  .modalActions {
+    padding-top: 12px;
+  }
+
+  .cancelBtn {
+    flex: 1;
+    border-radius: 999px;
+    border-color: rgba(45, 106, 79, 0.2);
+    color: #4a6350;
+    font-family: var(--sans);
+    background: rgba(255, 255, 255, 0.65);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.95);
+      color: #1b2e1f;
+    }
+  }
+
+  .deployBtn {
+    flex: 2;
+    border-radius: 999px;
+    font-family: var(--sans);
+    background: linear-gradient(180deg, #40916c, #2d6a4f);
+    box-shadow: 0 8px 20px rgba(45, 106, 79, 0.28);
+
+    &:hover {
+      filter: brightness(1.05);
+      background: linear-gradient(180deg, #40916c, #2d6a4f);
+    }
+  }
+
+  .modalFeedbackError {
+    border-radius: 14px;
+    background: rgba(254, 226, 226, 0.85);
+    border-color: rgba(225, 29, 72, 0.25);
+    color: #be123c;
+  }
+}

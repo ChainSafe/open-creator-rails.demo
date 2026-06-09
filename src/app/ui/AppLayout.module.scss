@@ -234,4 +234,8 @@
 .mainFarm {
   max-width: 960px;
   padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }

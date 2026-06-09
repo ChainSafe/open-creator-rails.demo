@@ -225,6 +225,7 @@ export function SubscribeToAssetButton({
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['ocr', 'subscriptionStatus'] })
       await qc.invalidateQueries({ queryKey: ['indexer', 'listSubscriptionsByUser'] })
+      await qc.invalidateQueries({ queryKey: ['petShop', 'unityPets'] })
       await qc.invalidateQueries({ queryKey: ['mockApi', 'gatedContent'] })
     },
     onError: (err) => {
