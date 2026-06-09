@@ -16,6 +16,7 @@
  *   RPC_URL              (default http://127.0.0.1:8545) — on-chain fallback when indexer lags
  *   SUBSCRIBER_ID        (default "demo" — matches DEMO_SUBSCRIBER_ID in the frontend)
  *   CHAIN_ID             (default 31337)
+ *   X402_FACILITATOR_URL (optional — enables /api/x402/* proxy to facilitator)
  */
 
 import { createServer } from 'node:http'
@@ -32,6 +33,7 @@ const INDEXER_URL = process.env.INDEXER_URL || 'http://localhost:42069/graphql'
 const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8545'
 const SUBSCRIBER_ID = process.env.SUBSCRIBER_ID || 'demo'
 const CHAIN_ID = process.env.CHAIN_ID || '31337'
+const X402_FACILITATOR_URL = (process.env.X402_FACILITATOR_URL || '').trim().replace(/\/$/, '')
 
 const ASSET_IS_SUBSCRIPTION_ACTIVE_ABI = [
   {
@@ -351,6 +353,30 @@ function json(res, status, body) {
   res.end(JSON.stringify(body))
 }
 
+async function proxyX402(action, req, res) {
+  if (!X402_FACILITATOR_URL) {
+    return json(res, 400, { error: 'X402_FACILITATOR_URL is not set' })
+  }
+  if (action === 'health' && req.method === 'GET') {
+    const upstream = await fetch(`${X402_FACILITATOR_URL}/health`, { method: 'GET', cache: 'no-store' })
+    const body = await upstream.json().catch(() => ({}))
+    return json(res, upstream.status, body)
+  }
+  if ((action === 'verify' || action === 'settle') && req.method === 'POST') {
+    let body = ''
+    for await (const chunk of req) body += chunk
+    const upstream = await fetch(`${X402_FACILITATOR_URL}/${action}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+      cache: 'no-store',
+    })
+    const jsonBody = await upstream.json().catch(() => ({}))
+    return json(res, upstream.status, jsonBody)
+  }
+  return json(res, 404, { error: 'Unsupported x402 action' })
+}
+
 const server = createServer(async (req, res) => {
   cors(res)
 
@@ -361,6 +387,11 @@ const server = createServer(async (req, res) => {
   }
 
   const url = new URL(req.url, `http://localhost:${PORT}`)
+
+  const x402Match = url.pathname.match(/^\/api\/x402\/([^/]+)$/)
+  if (x402Match) {
+    return proxyX402(x402Match[1], req, res)
+  }
 
   // GET /api/gated-creator-content?assetAddress=0x...&user=0x...
   if (url.pathname === '/api/gated-urls' && req.method === 'GET') {
@@ -482,6 +513,7 @@ server.listen(PORT, () => {
   console.log(`  RPC (fallback): ${RPC_URL}`)
   console.log(`  Chain ID:      ${CHAIN_ID}`)
   console.log(`  Subscriber ID: "${SUBSCRIBER_ID}"`)
+  console.log(`  x402 proxy:    ${X402_FACILITATOR_URL || '(disabled)'}`)
   console.log(`  Known assets:  ${byAddress.size} (deployments + services.json, keyed by asset address)`)
   if (byAddress.size > 0) {
     for (const [addr, meta] of byAddress) {

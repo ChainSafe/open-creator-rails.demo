@@ -19,8 +19,10 @@ import { Input } from '../components/Input'
 import { SubscribeToAssetButton } from '../components/SubscribeToAssetButton'
 import { appConfig } from '../config'
 import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
+import { isActiveForDemoOrX402 } from '../subscriptionActive'
 import { formatSubscriptionPeriodLabel } from '../petShop/formatSubscriptionPeriod'
 import { resolvePetByAssetId } from '../petShop/petCatalog'
+import { usePetShopPaymentMode } from '../petShop/PetShopPaymentModeContext'
 import { petShopTerms } from '../petShop/petShopTerminology'
 import { erc20MetadataAbi } from '../erc20Permit'
 import { useOcrSdk } from '../ocrSdk'
@@ -63,6 +65,7 @@ async function indexerGraphql<T>(
 export function AssetPage() {
   const params = useParams<{ assetId: string }>()
   const petShop = appConfig.petShopDemo
+  const { effectivePath } = usePetShopPaymentMode()
   const sdk = useOcrSdk()
   const qc = useQueryClient()
   const { address } = useAccount()
@@ -175,12 +178,7 @@ export function AssetPage() {
       if (!sdk) throw new Error('SDK not ready')
       if (!assetAddressQuery.data) throw new Error('Missing asset address')
       if (!address) throw new Error('Missing address')
-      return await sdk.Asset.getSubscriptionStatus({
-        assetAddress: assetAddressQuery.data,
-        subscriberId: DEMO_SUBSCRIBER_ID,
-        user: address,
-        source: 'auto',
-      })
+      return isActiveForDemoOrX402(sdk, assetAddressQuery.data, address)
     },
     enabled: Boolean(sdk && assetAddressQuery.data && address),
   })
@@ -352,10 +350,10 @@ export function AssetPage() {
       if (!resp.ok) throw new Error(`Mock API error: ${resp.status}`)
       return (await resp.json()) as CreatorGatedContent
     },
-    enabled: Boolean(statusQuery.data?.isActive && assetAddressQuery.data && address),
+    enabled: Boolean(statusQuery.data?.active && assetAddressQuery.data && address),
   })
 
-  const isSubscribed = Boolean(address && statusQuery.data?.isActive)
+  const isSubscribed = Boolean(address && statusQuery.data?.active)
   const pet = assetId && petShop ? resolvePetByAssetId(assetId, appConfig.chainKey) : undefined
   const creatorName =
     pet?.name ??
@@ -734,7 +732,7 @@ export function AssetPage() {
                   <p className={styles.petShopSubscribeLead}>
                     Subscribe to add <strong>{creatorName}</strong> to your farm.
                   </p>
-                  <SubscribeToAssetButton assetId={assetId} compact />
+                  <SubscribeToAssetButton assetId={assetId} compact paymentPath={effectivePath} />
                 </div>
               ) : (
                 <SubscribeToAssetButton

@@ -5,6 +5,7 @@ import { type Address } from 'viem'
 
 import { CreatorHubCard } from '../components/CreatorHubCard'
 import { PetCard } from '../components/PetCard'
+import { PetShopPaymentPicker } from '../components/PetShopPaymentPicker'
 import type { CreatorPublicMeta } from '../creatorProfile'
 import { appConfig } from '../config'
 import { fetchCreatorPublicMeta } from '../demoServicesClient'
@@ -57,6 +58,7 @@ export function RegistryPage() {
             <p className={styles.petHubSubtitle}>
               Subscribe on-chain, then visit My Little Farm to watch your animals appear.
             </p>
+            <PetShopPaymentPicker />
           </>
         ) : (
           <>

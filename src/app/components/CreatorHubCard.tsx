@@ -5,9 +5,9 @@ import { useAccount, usePublicClient } from 'wagmi'
 
 import { assetCoverImageUrl } from '../assetCoverImage'
 import { appConfig } from '../config'
-import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { erc20MetadataAbi } from '../erc20Permit'
 import { useOcrSdk } from '../ocrSdk'
+import { isActiveForDemoOrX402 } from '../subscriptionActive'
 import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
 import { SubscribeToAssetButton } from './SubscribeToAssetButton'
 import styles from './CreatorHubCard.module.scss'
@@ -58,12 +58,7 @@ export function CreatorHubCard({
     queryKey: ['ocr', 'subscriptionStatus', assetAddress, address],
     queryFn: async () => {
       if (!sdk || !address) throw new Error('Missing sdk or address')
-      return sdk.Asset.getSubscriptionStatus({
-        assetAddress,
-        subscriberId: DEMO_SUBSCRIBER_ID,
-        user: address,
-        source: 'auto',
-      })
+      return isActiveForDemoOrX402(sdk, assetAddress, address)
     },
     enabled: Boolean(isHub && sdk && address),
   })
@@ -112,7 +107,7 @@ export function CreatorHubCard({
     enabled: Boolean(needsPricing && publicClient && tokenAddressQuery.data),
   })
 
-  const hubIsActive = Boolean(address && statusQuery.data?.isActive)
+  const hubIsActive = Boolean(address && statusQuery.data?.active)
 
   const priceLabel =
     priceQuery.data && tokenMetaQuery.data

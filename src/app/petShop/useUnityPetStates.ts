@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import type { Hex } from 'viem'
 import { useAccount } from 'wagmi'
 
-import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
 import { useOcrSdk } from '../ocrSdk'
+import { isActiveForDemoOrX402 } from '../subscriptionActive'
 import type { UnityPetState } from './unityBridge'
 import type { PetRow } from './usePetRows'
 
@@ -31,18 +31,13 @@ export function useUnityPetStates(petRows: PetRow[]) {
       return Promise.all(
         subscribableRows.map(async ({ pet, assetId }) => {
           const assetAddress = await sdk.AssetRegistry.getAsset({ assetId })
-          const status = await sdk.Asset.getSubscriptionStatus({
-            assetAddress,
-            subscriberId: DEMO_SUBSCRIBER_ID,
-            user: address,
-            source: 'auto',
-          })
+          const status = await isActiveForDemoOrX402(sdk, assetAddress, address)
           return {
             slug: pet.slug,
             name: pet.name,
             emoji: pet.emoji,
-            active: Boolean(status?.isActive),
-            endTime: status?.endTime != null ? Number(status.endTime) : null,
+            active: status.active,
+            endTime: status.endTime != null ? Number(status.endTime) : null,
           }
         }),
       )

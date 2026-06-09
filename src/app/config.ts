@@ -60,4 +60,6 @@ export const appConfig = {
   demoTransferOwnerAddress: trimEnv(import.meta.env.VITE_DEMO_TRANSFER_OWNER_ADDRESS) as
     | `0x${string}`
     | undefined,
+  /** x402 facilitator base URL (dev: Vite proxies `/api/x402/*` to this origin). */
+  x402FacilitatorUrl: trimEnv(import.meta.env.VITE_X402_FACILITATOR_URL),
 } as const

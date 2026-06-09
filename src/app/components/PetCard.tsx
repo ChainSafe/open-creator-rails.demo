@@ -6,8 +6,9 @@ import { useAccount } from 'wagmi'
 
 import type { PetDefinition } from '../petShop/petCatalog'
 import { useOcrSdk } from '../ocrSdk'
-import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
+import { isActiveForDemoOrX402 } from '../subscriptionActive'
 import { formatPetShopTimeRemaining } from '../petShop/formatPetShopTime'
+import { usePetShopPaymentMode } from '../petShop/PetShopPaymentModeContext'
 import { SubscribeToAssetButton } from './SubscribeToAssetButton'
 import styles from './PetCard.module.scss'
 
@@ -19,6 +20,7 @@ type Props = {
 export function PetCard({ pet, assetId }: Props) {
   const sdk = useOcrSdk()
   const { address } = useAccount()
+  const { effectivePath } = usePetShopPaymentMode()
   const subscribable = Boolean(assetId)
 
   const assetAddressQuery = useQuery({
@@ -34,18 +36,13 @@ export function PetCard({ pet, assetId }: Props) {
     queryKey: ['ocr', 'subscriptionStatus', assetAddressQuery.data, address],
     queryFn: async () => {
       if (!sdk || !assetAddressQuery.data || !address) throw new Error('Not ready')
-      return sdk.Asset.getSubscriptionStatus({
-        assetAddress: assetAddressQuery.data,
-        subscriberId: DEMO_SUBSCRIBER_ID,
-        user: address,
-        source: 'auto',
-      })
+      return isActiveForDemoOrX402(sdk, assetAddressQuery.data, address)
     },
     enabled: Boolean(sdk && assetAddressQuery.data && address && subscribable),
     refetchInterval: 10_000,
   })
 
-  const isActive = Boolean(statusQuery.data?.isActive)
+  const isActive = Boolean(statusQuery.data?.active)
 
   return (
     <article className={styles.card} style={{ '--pet-accent': pet.accent } as CSSProperties}>
@@ -76,7 +73,7 @@ export function PetCard({ pet, assetId }: Props) {
         </div>
       ) : subscribable && assetId ? (
         <div className={styles.ground}>
-          <SubscribeToAssetButton assetId={assetId} compact />
+          <SubscribeToAssetButton assetId={assetId} compact paymentPath={effectivePath} />
         </div>
       ) : null}
     </article>

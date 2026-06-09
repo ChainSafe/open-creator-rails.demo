@@ -10,7 +10,7 @@ import { PetCard } from '../components/PetCard'
 import { appConfig } from '../config'
 import { fetchCreatorPublicMeta } from '../demoServicesClient'
 import { createDemoIndexer } from '../indexerClient'
-import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
+import { DEMO_SUBSCRIBER_ID, X402_SUBSCRIBER_ID } from '../demoSubscriber'
 import { assetIdFromLabel, petCatalogForChain } from '../petShop/petCatalog'
 import { useOcrSdk } from '../ocrSdk'
 import hubStyles from './RegistryPage.module.scss'
@@ -81,11 +81,19 @@ export function MySubscriptionsPage() {
       if (!sdk) throw new Error('SDK not ready')
       if (!address) throw new Error('Missing address')
       const ix = createDemoIndexer()
-      const subs = await ix.listSubscriptionsByUser({
-        user: address,
-        subscriberId: DEMO_SUBSCRIBER_ID,
-        activeOnly: false,
-      })
+      const [demoSubs, x402Subs] = await Promise.all([
+        ix.listSubscriptionsByUser({
+          user: address,
+          subscriberId: DEMO_SUBSCRIBER_ID,
+          activeOnly: false,
+        }),
+        ix.listSubscriptionsByUser({
+          user: address,
+          subscriberId: X402_SUBSCRIBER_ID,
+          activeOnly: false,
+        }),
+      ])
+      const subs = [...demoSubs, ...x402Subs]
       const enriched = await Promise.all(
         subs.map(async (s: IndexerSubscription): Promise<SubscriptionWithMeta> => {
           const assetAddress = normalizeAssetAddress(s.assetAddress)

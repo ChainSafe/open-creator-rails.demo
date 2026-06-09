@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { formatUnits, hexToSignature, isHex } from 'viem'
+import { formatUnits, isHex } from 'viem'
 import type { Hex } from 'viem'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
@@ -7,11 +7,14 @@ import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
 import { Button } from './Button'
 import { Input } from './Input'
 import { appConfig } from '../config'
-import { DEMO_SUBSCRIBER_ID } from '../demoSubscriber'
+import { DEMO_SUBSCRIBER_ID, X402_SUBSCRIBER_ID } from '../demoSubscriber'
 import { useOcrSdk } from '../ocrSdk'
 import { countPeriodsCoveringSeconds } from '../subscriptionPeriod'
 import { erc20PermitAbi } from '../erc20Permit'
-import { erc20PermitVersion } from '../permitDomain'
+import { signAssetPermit } from '../signPermit'
+import { isActiveForDemoOrX402, waitForSubscriptionActive } from '../subscriptionActive'
+import { buildX402PaymentBody, x402Health, x402Settle, x402Verify } from '../x402Client'
+import type { PetShopPaymentPath } from '../petShop/petShopPaymentMode'
 import { useToast } from '../toast/useToast'
 import styles from './SubscribeToAssetButton.module.scss'
 
@@ -24,6 +27,8 @@ type Props = {
   creatorName?: string
   /** Initial days input (non–pet-shop compact / full layouts). */
   initialDays?: number
+  /** Pet shop: show only direct or gasless (set from page preset / picker). */
+  paymentPath?: PetShopPaymentPath
 }
 
 const MONTH_SECONDS = 30n * 24n * 60n * 60n
@@ -41,6 +46,7 @@ export function SubscribeToAssetButton({
   unlockPanel = false,
   creatorName = 'this creator',
   initialDays = 30,
+  paymentPath,
 }: Props) {
   const sdk = useOcrSdk()
   const qc = useQueryClient()
@@ -49,6 +55,7 @@ export function SubscribeToAssetButton({
   const { data: walletClient } = useWalletClient({ chainId: appConfig.chain.id })
   const publicClient = usePublicClient({ chainId: appConfig.chain.id })
   const petShopCompact = appConfig.petShopDemo && compact
+  const facilitatorUrl = appConfig.x402FacilitatorUrl
   const [days, setDays] = useState(initialDays)
   const [minutes, setMinutes] = useState(DEFAULT_PET_SHOP_MINUTES)
 
@@ -69,14 +76,19 @@ export function SubscribeToAssetButton({
       if (!sdk) throw new Error('SDK not ready')
       if (!assetAddressQuery.data) throw new Error('Missing asset address')
       if (!address) throw new Error('Missing address')
-      return await sdk.Asset.getSubscriptionStatus({
-        assetAddress: assetAddressQuery.data,
-        subscriberId: DEMO_SUBSCRIBER_ID,
-        user: address,
-        source: 'auto',
-      })
+      return isActiveForDemoOrX402(sdk, assetAddressQuery.data, address)
     },
     enabled: Boolean(sdk && assetAddressQuery.data && address),
+  })
+
+  const facilitatorHealthQuery = useQuery({
+    queryKey: ['x402', 'health', facilitatorUrl],
+    queryFn: async () => {
+      if (!facilitatorUrl) return false
+      return x402Health(facilitatorUrl)
+    },
+    enabled: Boolean(facilitatorUrl),
+    refetchInterval: 30_000,
   })
 
   const tokenAddressQuery = useQuery({
@@ -170,56 +182,30 @@ export function SubscribeToAssetButton({
       if (!priceQuery.data) throw new Error('Missing price')
       if (!assetAddressQuery.data) throw new Error('Missing asset address')
 
-      const token = tokenAddressQuery.data
-      const [tokenName, nonce] = await Promise.all([
-        publicClient.readContract({ address: token, abi: erc20PermitAbi, functionName: 'name', args: [] }),
-        publicClient.readContract({ address: token, abi: erc20PermitAbi, functionName: 'nonces', args: [address] }),
-      ])
-
-      const value = priceQuery.data
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 60)
       const assetAddress = assetAddressQuery.data
       const count =
         subscriptionCount ?? (await countPeriodsCoveringSeconds(sdk, assetAddress, durationSeconds))
 
-      const signatureHex = await walletClient.signTypedData({
-        account: address,
-        domain: {
-          name: tokenName as string,
-          version: erc20PermitVersion(appConfig.chain.id, token),
-          chainId: appConfig.chain.id,
-          verifyingContract: token,
-        },
-        types: {
-          Permit: [
-            { name: 'owner', type: 'address' },
-            { name: 'spender', type: 'address' },
-            { name: 'value', type: 'uint256' },
-            { name: 'nonce', type: 'uint256' },
-            { name: 'deadline', type: 'uint256' },
-          ],
-        },
-        primaryType: 'Permit',
-        message: {
-          owner: address,
-          spender: assetAddress,
-          value,
-          nonce,
-          deadline,
-        },
+      const permit = await signAssetPermit({
+        publicClient,
+        walletClient,
+        owner: address,
+        token: tokenAddressQuery.data,
+        spender: assetAddress,
+        value: priceQuery.data,
+        chainId: appConfig.chain.id,
       })
 
-      const sig = hexToSignature(signatureHex)
       const txHash = await sdk.AssetRegistry.subscribe({
         assetId,
         subscriberId: DEMO_SUBSCRIBER_ID,
         subscriberAddress: address,
         payer: address,
         count,
-        deadline,
-        v: Number(sig.v),
-        r: sig.r,
-        s: sig.s,
+        deadline: permit.deadline,
+        v: permit.v,
+        r: permit.r,
+        s: permit.s,
       })
 
       await publicClient.waitForTransactionReceipt({ hash: txHash })
@@ -237,7 +223,75 @@ export function SubscribeToAssetButton({
     },
   })
 
-  const isSubscribing = subscribeMutation.isPending
+  const subscribeX402Mutation = useMutation({
+    mutationFn: async () => {
+      if (!sdk) throw new Error('SDK not ready')
+      if (!address) throw new Error('Connect wallet')
+      if (!walletClient) throw new Error('Wallet not ready')
+      if (!publicClient) throw new Error('Public client not ready')
+      if (!facilitatorUrl) throw new Error('Set VITE_X402_FACILITATOR_URL')
+      if (!tokenAddressQuery.data) throw new Error('Missing token address')
+      if (!priceQuery.data) throw new Error('Missing price')
+      if (!assetAddressQuery.data) throw new Error('Missing asset address')
+
+      const assetAddress = assetAddressQuery.data
+      const count =
+        subscriptionCount ?? (await countPeriodsCoveringSeconds(sdk, assetAddress, durationSeconds))
+
+      const permit = await signAssetPermit({
+        publicClient,
+        walletClient,
+        owner: address,
+        token: tokenAddressQuery.data,
+        spender: assetAddress,
+        value: priceQuery.data,
+        chainId: appConfig.chain.id,
+      })
+
+      const body = buildX402PaymentBody({
+        chainId: appConfig.chain.id,
+        payer: address,
+        assetAddress,
+        tokenAddress: tokenAddressQuery.data,
+        count,
+        permit,
+      })
+
+      const verify = await x402Verify(facilitatorUrl, body)
+      if (!verify.isValid) {
+        throw new Error(verify.invalidReason ?? 'Payment verification failed')
+      }
+
+      const settle = await x402Settle(facilitatorUrl, body)
+      if (!settle?.success) {
+        throw new Error('Facilitator settle did not succeed')
+      }
+
+      await waitForSubscriptionActive(sdk, assetAddress, address, X402_SUBSCRIBER_ID)
+      return settle.transaction ?? null
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['ocr', 'subscriptionStatus'] })
+      await qc.invalidateQueries({ queryKey: ['indexer', 'listSubscriptionsByUser'] })
+      await qc.invalidateQueries({ queryKey: ['petShop', 'unityPets'] })
+      await qc.invalidateQueries({ queryKey: ['mockApi', 'gatedContent'] })
+    },
+    onError: (err) => {
+      const message = err instanceof Error ? err.message : String(err)
+      showToast(message, { variant: 'error' })
+    },
+  })
+
+  const isSubscribing = subscribeMutation.isPending || subscribeX402Mutation.isPending
+  const canSubscribeGasless =
+    Boolean(facilitatorUrl) &&
+    facilitatorHealthQuery.data === true &&
+    Boolean(priceQuery.data) &&
+    Boolean(tokenAddressQuery.data) &&
+    Boolean(assetAddressQuery.data)
+
+  const showDirect = paymentPath == null || paymentPath === 'direct'
+  const showGasless = paymentPath == null || paymentPath === 'gasless'
 
   const monthlyLabel =
     monthlyPriceQuery.data && tokenMetaQuery.data
@@ -297,33 +351,49 @@ export function SubscribeToAssetButton({
           <p className={styles.unlockHint}>
             Switch your wallet to <strong>{appConfig.chain.name}</strong> to subscribe.
           </p>
-        ) : statusQuery.data?.isActive ? (
+        ) : statusQuery.data?.active ? (
           <p className={styles.unlockHint}>
             <strong>Already subscribed</strong>
           </p>
         ) : (
-          <button
-            type="button"
-            className={styles.unlockCta}
-            disabled={
-              !sdk ||
-              !assetAddressQuery.data ||
-              !tokenAddressQuery.data ||
-              !priceQuery.data ||
-              isSubscribing
-            }
-            aria-busy={isSubscribing || undefined}
-            onClick={() => subscribeMutation.mutate()}
-          >
-            {isSubscribing ? (
-              <>
-                <span className={styles.unlockSpinner} aria-hidden />
-                Subscribing…
-              </>
-            ) : (
-              'Subscribe to Unlock Access'
-            )}
-          </button>
+          <>
+            {showDirect ? (
+              <button
+                type="button"
+                className={styles.unlockCta}
+                disabled={
+                  !sdk ||
+                  !assetAddressQuery.data ||
+                  !tokenAddressQuery.data ||
+                  !priceQuery.data ||
+                  isSubscribing
+                }
+                aria-busy={isSubscribing || undefined}
+                onClick={() => subscribeMutation.mutate()}
+              >
+                {subscribeMutation.isPending ? (
+                  <>
+                    <span className={styles.unlockSpinner} aria-hidden />
+                    Subscribing…
+                  </>
+                ) : paymentPath === 'direct' ? (
+                  'Subscribe to Unlock Access'
+                ) : (
+                  'Subscribe (wallet pays gas)'
+                )}
+              </button>
+            ) : null}
+            {showGasless && facilitatorUrl ? (
+              <button
+                type="button"
+                className={showDirect ? styles.unlockCtaSecondary : styles.unlockCta}
+                disabled={!canSubscribeGasless || isSubscribing}
+                onClick={() => subscribeX402Mutation.mutate()}
+              >
+                {subscribeX402Mutation.isPending ? 'Settling…' : 'Subscribe (gasless)'}
+              </button>
+            ) : null}
+          </>
         )}
       </div>
     )
@@ -411,27 +481,53 @@ export function SubscribeToAssetButton({
         <span className={compact ? styles.connectHintCompact : styles.connectHint}>
           Switch your wallet to <strong>{appConfig.chain.name}</strong> to subscribe.
         </span>
-      ) : statusQuery.data?.isActive ? (
+      ) : statusQuery.data?.active ? (
         <span className={compact ? styles.subscribedCompact : undefined}>
           <strong>Subscribed</strong>
         </span>
       ) : (
-        <Button
-          type="button"
-          variant="primary"
-          size={compact ? 'sm' : 'md'}
-          className={petShopCompact ? styles.compactSubscribe : undefined}
-          loading={isSubscribing}
-          onClick={() => subscribeMutation.mutate()}
-          disabled={
-            !sdk ||
-            !assetAddressQuery.data ||
-            !tokenAddressQuery.data ||
-            !priceQuery.data
-          }
-        >
-          {isSubscribing ? 'Subscribing…' : 'Subscribe'}
-        </Button>
+        <>
+          {showDirect ? (
+            <Button
+              type="button"
+              variant="primary"
+              size={compact ? 'sm' : 'md'}
+              className={petShopCompact ? styles.compactSubscribe : undefined}
+              loading={subscribeMutation.isPending}
+              onClick={() => subscribeMutation.mutate()}
+              disabled={
+                isSubscribing ||
+                !sdk ||
+                !assetAddressQuery.data ||
+                !tokenAddressQuery.data ||
+                !priceQuery.data
+              }
+            >
+              {subscribeMutation.isPending
+                ? 'Subscribing…'
+                : petShopCompact
+                  ? 'Subscribe'
+                  : 'Subscribe (gas)'}
+            </Button>
+          ) : null}
+          {showGasless && facilitatorUrl ? (
+            <Button
+              type="button"
+              variant={petShopCompact ? 'primary' : 'secondary'}
+              size={compact ? 'sm' : 'md'}
+              className={petShopCompact ? styles.compactSubscribe : undefined}
+              loading={subscribeX402Mutation.isPending}
+              onClick={() => subscribeX402Mutation.mutate()}
+              disabled={isSubscribing || !canSubscribeGasless}
+            >
+              {subscribeX402Mutation.isPending
+                ? 'Settling…'
+                : petShopCompact
+                  ? 'Subscribe'
+                  : 'Gasless'}
+            </Button>
+          ) : null}
+        </>
       )}
 
       {!compact && subscribeMutation.data ? (

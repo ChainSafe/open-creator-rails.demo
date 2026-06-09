@@ -6,6 +6,7 @@ import { appConfig } from '../config'
 import { Button } from '../components/Button'
 import { useLocalAnvilWallet } from '../useLocalAnvilWallet'
 import { ToastProvider } from '../toast/ToastProvider'
+import { PetShopPaymentModeProvider } from '../petShop/PetShopPaymentModeContext'
 import { useAssetOwnerGate } from '../useAssetOwnerGate'
 import styles from './AppLayout.module.scss'
 
@@ -83,34 +84,38 @@ export function AppLayout() {
     .filter(Boolean)
     .join(' ')
 
+  const shell = (
+    <div className={layoutClass}>
+      <header className={petShop ? styles.headerPetShop : styles.header}>
+        <nav className={styles.nav}>
+          <div className={styles.navStart}>
+            <Link to="/" className={styles.brand} aria-label="OCR Pet Shop home">
+              <span className={`material-symbols-outlined ${styles.brandIcon}`}>
+                {petShop ? 'pets' : 'hub'}
+              </span>
+              {petShop ? 'OCR Pet Shop' : 'Open Creator Rails'}
+            </Link>
+            <div className={styles.navGroup}>
+              <TopLink to="/" label="Rent-A-Pet" />
+              {appConfig.petShopDemo ? <TopLink to="/pet-shop" label="My Little Farm" /> : null}
+              <TopLink to="/subscriptions" label="My Furry Friends" />
+              {showCreatorNav ? <TopLink to="/creator-console" label="Admin Console" /> : null}
+            </div>
+          </div>
+          <div className={styles.walletSlot}>
+            <HeaderWallet />
+          </div>
+        </nav>
+      </header>
+      <main className={mainClass}>
+        <Outlet />
+      </main>
+    </div>
+  )
+
   return (
     <ToastProvider>
-      <div className={layoutClass}>
-        <header className={petShop ? styles.headerPetShop : styles.header}>
-          <nav className={styles.nav}>
-            <div className={styles.navStart}>
-              <Link to="/" className={styles.brand} aria-label="OCR Pet Shop home">
-                <span className={`material-symbols-outlined ${styles.brandIcon}`}>
-                  {petShop ? 'pets' : 'hub'}
-                </span>
-                {petShop ? 'OCR Pet Shop' : 'Open Creator Rails'}
-              </Link>
-              <div className={styles.navGroup}>
-                <TopLink to="/" label="Rent-A-Pet" />
-                {appConfig.petShopDemo ? <TopLink to="/pet-shop" label="My Little Farm" /> : null}
-                <TopLink to="/subscriptions" label="My Furry Friends" />
-                {showCreatorNav ? <TopLink to="/creator-console" label="Admin Console" /> : null}
-              </div>
-            </div>
-            <div className={styles.walletSlot}>
-              <HeaderWallet />
-            </div>
-          </nav>
-        </header>
-        <main className={mainClass}>
-          <Outlet />
-        </main>
-      </div>
+      {petShop ? <PetShopPaymentModeProvider>{shell}</PetShopPaymentModeProvider> : shell}
     </ToastProvider>
   )
 }
