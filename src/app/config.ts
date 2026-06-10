@@ -43,6 +43,13 @@ function envFlag(v: string | undefined): boolean {
   return s === '1' || s === 'true' || s === 'yes'
 }
 
+/** Unity iframe must load index.html; `/pet-shop-player` alone hits SPA fallback on Railway. */
+function resolveUnityPlayerUrl(raw: string | undefined): string {
+  const base = trimEnv(raw) ?? '/pet-shop-player/index.html'
+  if (base.includes('.html') || base.includes('?')) return base
+  return `${base.replace(/\/$/, '')}/index.html`
+}
+
 export const appConfig = {
   chainKey,
   chain,
@@ -53,7 +60,7 @@ export const appConfig = {
   /** When true, home route shows the pet shop split demo. */
   petShopDemo: envFlag(import.meta.env.VITE_PET_SHOP_DEMO),
   /** Unity WebGL build URL (placeholder until SampleProject WebGL is exported). */
-  unityPlayerUrl: trimEnv(import.meta.env.VITE_UNITY_PLAYER_URL) ?? '/pet-shop-player/index.html',
+  unityPlayerUrl: resolveUnityPlayerUrl(import.meta.env.VITE_UNITY_PLAYER_URL),
   /** Optional: Google Sheet CSV export URL for creator metadata (dev/demo). */
   demoServicesSheetUrl: trimEnv(import.meta.env.VITE_DEMO_SERVICES_SHEET_URL),
   /** Local dev: Anvil account #3 — pre-filled as Add Creator asset owner (transfer demo). */

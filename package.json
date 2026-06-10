@@ -21,7 +21,7 @@
     "build:pet-shop": "pnpm -C open-creator-rails.sdk build && tsc -b && vite build --mode pet-shop",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "serve dist -s -l ${PORT:-3000}"
+    "start": "node scripts/serve-production.mjs"
   },
   "dependencies": {
     "@open-creator-rails/sdk": "workspace:*",
