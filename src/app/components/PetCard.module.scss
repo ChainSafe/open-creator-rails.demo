@@ -110,32 +110,6 @@
   }
 }
 
-.subscribedBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #d8f3dc, #b7e4c7);
-  border: 1px solid rgba(149, 213, 178, 0.8);
-}
-
-.subscribedLabel {
-  font-family: var(--sans);
-  font-size: 14px;
-  font-weight: 700;
-  color: #1b4332;
-}
-
-.subscribedExpiry {
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  color: #40916c;
-  white-space: nowrap;
-}
-
 .farmLink {
   display: block;
   margin-top: 10px;

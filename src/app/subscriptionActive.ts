@@ -39,16 +39,17 @@ export async function isActiveForDemoOrX402(
   sdk: OcrSdk,
   assetAddress: Hex,
   user: Address,
-): Promise<{ active: boolean; endTime: bigint | null }> {
+): Promise<{ active: boolean; endTime: bigint | null; startTime: bigint | null }> {
   const [direct, x402] = await Promise.all([
     isActiveForSubscriber(sdk, assetAddress, DEMO_SUBSCRIBER_ID, user),
     isActiveForSubscriber(sdk, assetAddress, X402_SUBSCRIBER_ID, user),
   ])
   if (!direct && !x402) {
-    return { active: false, endTime: null }
+    return { active: false, endTime: null, startTime: null }
   }
 
   let endTime: bigint | null = null
+  let startTime: bigint | null = null
   for (const subscriberId of [DEMO_SUBSCRIBER_ID, X402_SUBSCRIBER_ID]) {
     try {
       const status = await sdk.Asset.getSubscriptionStatus({
@@ -59,14 +60,17 @@ export async function isActiveForDemoOrX402(
       })
       if (status?.isActive && status.endTime != null) {
         const t = status.endTime
-        if (endTime == null || t > endTime) endTime = t
+        if (endTime == null || t > endTime) {
+          endTime = t
+          startTime = status.startTime ?? null
+        }
       }
     } catch {
       /* ignore */
     }
   }
 
-  return { active: true, endTime }
+  return { active: true, endTime, startTime }
 }
 
 export async function waitForSubscriptionActive(

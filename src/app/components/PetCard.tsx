@@ -7,8 +7,8 @@ import { useAccount } from 'wagmi'
 import type { PetDefinition } from '../petShop/petCatalog'
 import { useOcrSdk } from '../ocrSdk'
 import { isActiveForDemoOrX402 } from '../subscriptionActive'
-import { formatPetShopTimeRemaining } from '../petShop/formatPetShopTime'
 import { usePetShopPaymentMode } from '../petShop/PetShopPaymentModeContext'
+import { SubscribedTimeBar } from './SubscribedTimeBar'
 import { SubscribeToAssetButton } from './SubscribeToAssetButton'
 import styles from './PetCard.module.scss'
 
@@ -42,6 +42,15 @@ export function PetCard({ pet, assetId }: Props) {
     refetchInterval: 10_000,
   })
 
+  const periodSecondsQuery = useQuery({
+    queryKey: ['ocr', 'subscriptionPeriod', assetAddressQuery.data],
+    queryFn: async () => {
+      if (!sdk || !assetAddressQuery.data) throw new Error('Not ready')
+      return sdk.Asset.getSubscriptionDuration({ assetAddress: assetAddressQuery.data })
+    },
+    enabled: Boolean(sdk && assetAddressQuery.data && subscribable),
+  })
+
   const isActive = Boolean(statusQuery.data?.active)
 
   return (
@@ -59,14 +68,15 @@ export function PetCard({ pet, assetId }: Props) {
 
       {isActive ? (
         <div className={styles.ground}>
-          <div className={styles.subscribedBar}>
-            <span className={styles.subscribedLabel}>Subscribed</span>
-            {statusQuery.data?.endTime != null ? (
-              <span className={styles.subscribedExpiry}>
-                {formatPetShopTimeRemaining(statusQuery.data.endTime)}
-              </span>
-            ) : null}
-          </div>
+          {statusQuery.data?.endTime != null ? (
+            <SubscribedTimeBar
+              endTime={statusQuery.data.endTime}
+              startTime={statusQuery.data.startTime}
+              periodSeconds={periodSecondsQuery.data}
+            />
+          ) : (
+            <SubscribedTimeBar labelOnly />
+          )}
           <Link to="/pet-shop" className={styles.farmLink}>
             View in your farm →
           </Link>
