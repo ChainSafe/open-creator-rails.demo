@@ -55,9 +55,20 @@ export function buildX402PaymentBody(params: {
   }
 }
 
-export async function x402Health(_facilitatorUrl: string): Promise<boolean> {
+/** Dev: Vite proxies `/api/x402/*` when unset. Prod: absolute facilitator URL. */
+export function x402ApiBase(facilitatorUrl: string | undefined): string {
+  const trimmed = facilitatorUrl?.trim().replace(/\/$/, '')
+  if (trimmed) return trimmed
+  return '/api/x402'
+}
+
+function x402Url(base: string, path: 'health' | 'verify' | 'settle'): string {
+  return base.startsWith('http') ? `${base}/${path}` : `${base}/${path}`
+}
+
+export async function x402Health(facilitatorUrl: string | undefined): Promise<boolean> {
   try {
-    const res = await fetch('/api/x402/health', { method: 'GET' })
+    const res = await fetch(x402Url(x402ApiBase(facilitatorUrl), 'health'), { method: 'GET' })
     return res.ok
   } catch {
     return false
@@ -65,10 +76,10 @@ export async function x402Health(_facilitatorUrl: string): Promise<boolean> {
 }
 
 export async function x402Verify(
-  _facilitatorUrl: string,
+  facilitatorUrl: string | undefined,
   body: X402PaymentBody,
 ): Promise<{ isValid: boolean; invalidReason?: string }> {
-  const res = await fetch('/api/x402/verify', {
+  const res = await fetch(x402Url(x402ApiBase(facilitatorUrl), 'verify'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
@@ -81,10 +92,10 @@ export async function x402Verify(
 }
 
 export async function x402Settle(
-  _facilitatorUrl: string,
+  facilitatorUrl: string | undefined,
   body: X402PaymentBody,
 ): Promise<{ success: boolean; transaction?: string }> {
-  const res = await fetch('/api/x402/settle', {
+  const res = await fetch(x402Url(x402ApiBase(facilitatorUrl), 'settle'), {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
