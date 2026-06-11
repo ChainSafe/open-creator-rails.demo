@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { useAccount, useChainId, useConnect, useWalletClient } from 'wagmi'
+import { useCallback, useState } from 'react'
+import { useAccount, useChainId, useConnect, useSwitchChain, useWalletClient } from 'wagmi'
 
 import { appConfig } from './config'
-import { ensureLocalAnvilChain, isWalletUserRejection } from './ensureLocalAnvilChain'
+import { ensureAppChain, isWalletUserRejection } from './ensureAppChain'
 import { useToast } from './toast/useToast'
 
 /** True when the app is built for local Anvil (`VITE_CHAIN=anvil`, e.g. `pnpm dev:local`). */
@@ -13,34 +13,51 @@ export function useLocalAnvilWallet() {
   const chainId = useChainId()
   const { data: walletClient } = useWalletClient()
   const { connect, connectors, isPending: isConnecting } = useConnect()
+  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain()
   const { showToast } = useToast()
   const [isEnsuringChain, setIsEnsuringChain] = useState(false)
-  const autoEnsureAttempted = useRef(false)
 
   const targetChainId = appConfig.chain.id
-  const needsNetworkSwitch = isLocalAnvilDev && isConnected && chainId !== targetChainId
+  const needsNetworkSwitch = isConnected && chainId !== targetChainId
 
-  const ensureChain = useCallback(async (): Promise<boolean> => {
-    if (!isLocalAnvilDev || !walletClient) return true
-
+  const switchToTargetChain = useCallback(async (): Promise<boolean> => {
     setIsEnsuringChain(true)
     try {
-      await ensureLocalAnvilChain(walletClient)
+      await switchChainAsync({ chainId: targetChainId })
       return true
     } catch (error) {
-      if (isWalletUserRejection(error)) {
-        showToast('Network switch cancelled in wallet', { variant: 'info' })
-      } else {
-        showToast(
-          error instanceof Error ? error.message : 'Could not switch to local Anvil network',
-          { variant: 'error' },
-        )
+      if (!walletClient) {
+        if (isWalletUserRejection(error)) {
+          showToast('Network switch cancelled in wallet', { variant: 'info' })
+        } else {
+          showToast(
+            error instanceof Error ? error.message : `Could not switch to ${appConfig.chain.name}`,
+            { variant: 'error' },
+          )
+        }
+        return false
       }
-      return false
+
+      try {
+        await ensureAppChain(walletClient)
+        return true
+      } catch (fallbackError) {
+        if (isWalletUserRejection(fallbackError)) {
+          showToast('Network switch cancelled in wallet', { variant: 'info' })
+        } else {
+          showToast(
+            fallbackError instanceof Error
+              ? fallbackError.message
+              : `Could not switch to ${appConfig.chain.name}`,
+            { variant: 'error' },
+          )
+        }
+        return false
+      }
     } finally {
       setIsEnsuringChain(false)
     }
-  }, [walletClient, showToast])
+  }, [switchChainAsync, targetChainId, walletClient, showToast])
 
   const connectWallet = useCallback(() => {
     const connector = connectors[0]
@@ -49,41 +66,29 @@ export function useLocalAnvilWallet() {
     connect(
       {
         connector,
-        chainId: isLocalAnvilDev ? targetChainId : undefined,
+        chainId: targetChainId,
       },
       {
+        onSuccess: async (data) => {
+          if (data.chainId !== targetChainId) {
+            await switchToTargetChain()
+          }
+        },
         onError: (error) => {
           showToast(error.message, { variant: 'error' })
         },
       },
     )
-  }, [connect, connectors, showToast, targetChainId])
-
-  // Wallet already connected (e.g. refresh) but on the wrong network.
-  useEffect(() => {
-    if (!isLocalAnvilDev || !isConnected || !walletClient) {
-      autoEnsureAttempted.current = false
-      return
-    }
-    if (chainId === targetChainId) {
-      autoEnsureAttempted.current = false
-      return
-    }
-    if (autoEnsureAttempted.current) return
-    autoEnsureAttempted.current = true
-    void ensureChain()
-  }, [chainId, ensureChain, isConnected, targetChainId, walletClient])
-
-  const switchToAnvil = useCallback(() => {
-    autoEnsureAttempted.current = false
-    void ensureChain()
-  }, [ensureChain])
+  }, [connect, connectors, showToast, switchToTargetChain, targetChainId])
 
   return {
     connectWallet,
-    switchToAnvil,
-    isConnecting: isConnecting || isEnsuringChain,
+    /** @deprecated use switchToTargetChain */
+    switchToAnvil: switchToTargetChain,
+    switchToTargetChain,
+    isConnecting: isConnecting || isEnsuringChain || isSwitchingChain,
     needsNetworkSwitch,
     isLocalAnvilDev,
+    targetChainName: appConfig.chain.name,
   }
 }

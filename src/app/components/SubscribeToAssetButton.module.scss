@@ -17,18 +17,38 @@
   width: 100%;
 }
 
-:global(.pet-shop-mode) .compactDaysLabel {
+:global(.pet-shop-mode) .compactDurationLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+:global(.pet-shop-mode) .compactDurationText {
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 600;
   color: #5c7362;
+  white-space: nowrap;
 }
 
-:global(.pet-shop-mode) .compactDaysInput {
-  width: 52px;
+:global(.pet-shop-mode) .compactDurationSelect {
+  min-width: 0;
+  flex: 1;
+  padding: 8px 10px;
   border-radius: 12px;
   border: 1px solid rgba(45, 106, 79, 0.12);
   background: rgba(255, 255, 255, 0.9);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: #1b4332;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 :global(.pet-shop-mode) .compactPrice {

@@ -23,29 +23,44 @@ function TopLink(props: { to: string; label: string }) {
   )
 }
 
-function HeaderWallet() {
+function HeaderWallet({ petShop }: { petShop: boolean }) {
   const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
   const {
     connectWallet,
-    switchToAnvil,
+    switchToTargetChain,
     isConnecting,
     needsNetworkSwitch,
     isLocalAnvilDev,
+    targetChainName,
   } = useLocalAnvilWallet()
+
+  const switchLabel = isLocalAnvilDev ? 'Switch to Anvil' : `Switch to ${targetChainName}`
 
   return (
     <div className={styles.wallet}>
       {!isConnected ? (
-        <Button variant="primary" size="sm" onClick={connectWallet} disabled={isConnecting}>
+        <Button
+          variant="primary"
+          size="sm"
+          className={petShop ? styles.connectWalletPetShop : undefined}
+          onClick={connectWallet}
+          disabled={isConnecting}
+        >
           <span className="material-symbols-outlined" style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}>account_balance_wallet</span>
           {isConnecting ? 'Connecting\u2026' : 'Connect Wallet'}
         </Button>
       ) : (
         <>
           {needsNetworkSwitch ? (
-            <Button variant="primary" size="sm" onClick={switchToAnvil} disabled={isConnecting}>
-              {isConnecting ? 'Switching\u2026' : 'Switch to Anvil'}
+            <Button
+              variant="primary"
+              size="sm"
+              className={petShop ? styles.connectWalletPetShop : undefined}
+              onClick={switchToTargetChain}
+              disabled={isConnecting}
+            >
+              {isConnecting ? 'Switching\u2026' : switchLabel}
             </Button>
           ) : null}
           <code className={styles.walletAddress} title={address}>
@@ -103,7 +118,7 @@ export function AppLayout() {
             </div>
           </div>
           <div className={styles.walletSlot}>
-            <HeaderWallet />
+            <HeaderWallet petShop={Boolean(petShop)} />
           </div>
         </nav>
       </header>

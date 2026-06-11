@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { formatUnits, isHex } from 'viem'
 import type { Hex } from 'viem'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { useAccount, useChainId, usePublicClient, useWalletClient } from 'wagmi'
 
 import { Button } from './Button'
 import { Input } from './Input'
@@ -14,7 +14,9 @@ import { erc20PermitAbi } from '../erc20Permit'
 import { signAssetPermit } from '../signPermit'
 import { isActiveForDemoOrX402, waitForSubscriptionActive } from '../subscriptionActive'
 import { buildX402PaymentBody, x402Health, x402Settle, x402Verify } from '../x402Client'
+import { formatSubscriptionPeriodLabel } from '../petShop/formatSubscriptionPeriod'
 import type { PetShopPaymentPath } from '../petShop/petShopPaymentMode'
+import { useLocalAnvilWallet } from '../useLocalAnvilWallet'
 import { useToast } from '../toast/useToast'
 import styles from './SubscribeToAssetButton.module.scss'
 
@@ -32,13 +34,8 @@ type Props = {
 }
 
 const MONTH_SECONDS = 30n * 24n * 60n * 60n
-const DEFAULT_PET_SHOP_MINUTES = 5
-
-function minutesToPeriodCount(minutes: number, periodSeconds: bigint): bigint {
-  const calendarSeconds = BigInt(Math.max(1, minutes)) * 60n
-  if (periodSeconds <= 0n) return 1n
-  return (calendarSeconds + periodSeconds - 1n) / periodSeconds
-}
+/** Max rental length in pet-shop compact UI (multiples of on-chain billing period). */
+const PET_SHOP_PERIOD_OPTIONS = [1, 2, 3, 4, 5, 6] as const
 
 export function SubscribeToAssetButton({
   assetId,
@@ -52,12 +49,16 @@ export function SubscribeToAssetButton({
   const qc = useQueryClient()
   const { showToast } = useToast()
   const { address, isConnected } = useAccount()
+  const chainId = useChainId()
   const { data: walletClient } = useWalletClient({ chainId: appConfig.chain.id })
   const publicClient = usePublicClient({ chainId: appConfig.chain.id })
+  const { switchToTargetChain, isConnecting: isSwitchingChain, targetChainName } =
+    useLocalAnvilWallet()
   const petShopCompact = appConfig.petShopDemo && compact
   const facilitatorUrl = appConfig.x402FacilitatorUrl
+  const needsNetworkSwitch = isConnected && chainId !== appConfig.chain.id
   const [days, setDays] = useState(initialDays)
-  const [minutes, setMinutes] = useState(DEFAULT_PET_SHOP_MINUTES)
+  const [periodCount, setPeriodCount] = useState<number>(1)
 
   const durationSeconds = useMemo(() => BigInt(Math.max(1, days)) * 24n * 60n * 60n, [days])
 
@@ -115,15 +116,15 @@ export function SubscribeToAssetButton({
 
   const subscriptionCount = useMemo(() => {
     if (!petShopCompact) return null
-    return minutesToPeriodCount(minutes, periodSeconds)
-  }, [petShopCompact, minutes, periodSeconds])
+    return BigInt(Math.max(1, periodCount))
+  }, [petShopCompact, periodCount])
 
   const priceQuery = useQuery({
     queryKey: [
       'ocr',
       'assetPrice',
       assetAddressQuery.data,
-      petShopCompact ? `minutes:${minutes}` : durationSeconds.toString(),
+      petShopCompact ? `periods:${periodCount}` : durationSeconds.toString(),
     ],
     queryFn: async () => {
       if (!sdk) throw new Error('SDK not ready')
@@ -430,18 +431,24 @@ export function SubscribeToAssetButton({
         </>
       ) : petShopCompact ? (
         <>
-          <label className={styles.compactDaysLabel}>
-            <span>Min</span>
-            <Input
-              type="number"
-              min={1}
-              step={1}
-              value={minutes}
-              onChange={(e) => setMinutes(Math.max(1, Number(e.target.value) || 1))}
-              size="sm"
-              className={styles.compactDaysInput}
+          <label className={styles.compactDurationLabel}>
+            <span className={styles.compactDurationText}>Rent</span>
+            <select
+              className={styles.compactDurationSelect}
+              value={periodCount}
+              onChange={(e) => setPeriodCount(Number(e.target.value))}
               disabled={isSubscribing}
-            />
+              aria-label="Rental duration"
+            >
+              {PET_SHOP_PERIOD_OPTIONS.map((count) => {
+                const totalSeconds = periodSeconds * BigInt(count)
+                return (
+                  <option key={count} value={count}>
+                    {formatSubscriptionPeriodLabel(totalSeconds)}
+                  </option>
+                )
+              })}
+            </select>
           </label>
           <span className={styles.compactPrice}>
             {priceQuery.data && tokenMetaQuery.data
@@ -477,10 +484,17 @@ export function SubscribeToAssetButton({
 
       {!isConnected ? (
         <span className={compact ? styles.connectHintCompact : styles.connectHint}>Connect a wallet to subscribe.</span>
-      ) : !walletClient ? (
-        <span className={compact ? styles.connectHintCompact : styles.connectHint}>
-          Switch your wallet to <strong>{appConfig.chain.name}</strong> to subscribe.
-        </span>
+      ) : needsNetworkSwitch || !walletClient ? (
+        <Button
+          type="button"
+          variant="primary"
+          size={compact ? 'sm' : 'md'}
+          className={petShopCompact ? styles.compactSubscribe : undefined}
+          loading={isSwitchingChain}
+          onClick={() => switchToTargetChain()}
+        >
+          {isSwitchingChain ? 'Switching…' : `Switch to ${targetChainName}`}
+        </Button>
       ) : statusQuery.data?.active ? (
         <span className={compact ? styles.subscribedCompact : undefined}>
           <strong>Subscribed</strong>
